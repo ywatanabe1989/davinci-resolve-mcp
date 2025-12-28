@@ -212,6 +212,63 @@ Both configurations have the same structure:
 }
 ```
 
+## WSL (Windows Subsystem for Linux) Setup
+
+For users running Claude Code or other MCP clients from WSL while using DaVinci Resolve on Windows:
+
+### WSL Launcher Script
+
+A dedicated WSL launcher script is provided that bridges WSL and Windows:
+
+```bash
+./scripts/wsl-launcher.sh
+```
+
+This script:
+- Detects if DaVinci Resolve is running on Windows
+- Automatically starts Resolve if not running
+- Waits for the scripting API to initialize
+- Starts the MCP server via PowerShell
+
+### WSL Configuration
+
+1. **Install the project on Windows** (not in WSL filesystem):
+   ```powershell
+   # In PowerShell, clone to a Windows path
+   cd "C:\Program Files (x86)\ywatanabe"
+   git clone https://github.com/ywatanabe1989/davinci-resolve-mcp.git
+   cd davinci-resolve-mcp
+   python -m venv venv
+   .\venv\Scripts\pip install -r requirements.txt
+   ```
+
+2. **Configure the WSL launcher script**:
+   Edit `scripts/wsl-launcher.sh` and adjust these paths:
+   ```bash
+   WIN_PROJECT='C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp'
+   WIN_PYTHON="$WIN_PROJECT\\venv\\Scripts\\python.exe"
+   WIN_SCRIPT="$WIN_PROJECT\\src\\resolve_mcp_server.py"
+   RESOLVE_EXE='C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe'
+   ```
+
+3. **Claude Code MCP Configuration** (`~/.claude.json`):
+   ```json
+   {
+     "mcpServers": {
+       "davinci-resolve": {
+         "command": "/path/to/davinci-resolve-mcp/scripts/wsl-launcher.sh",
+         "args": []
+       }
+     }
+   }
+   ```
+
+### WSL Troubleshooting
+
+- **PowerShell not found**: Ensure `powershell.exe` is in your WSL PATH
+- **Scripting not enabled**: The script will show instructions if Resolve's external scripting is disabled
+- **Timeout errors**: Increase `max_wait` in the script if Resolve takes longer to start
+
 ## Support
 
 If you encounter any issues not covered in this guide, please file an issue on the GitHub repository. 
