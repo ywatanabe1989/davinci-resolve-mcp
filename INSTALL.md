@@ -260,15 +260,28 @@ The WSL launcher script **automatically detects** paths for:
    }
    ```
 
-3. **Optional: Override paths via environment variables**:
-   If auto-detection doesn't work for your setup, override with env vars:
+3. **Optional: Configure via .env file**:
+   If auto-detection doesn't work for your setup, create a `.env` file:
    ```bash
-   export RESOLVE_MCP_PROJECT='C:\custom\path\davinci-resolve-mcp'
-   export RESOLVE_MCP_PYTHON='C:\custom\path\venv\Scripts\python.exe'
-   export RESOLVE_MCP_SCRIPT='C:\custom\path\src\resolve_mcp_server.py'
-   export RESOLVE_EXE='D:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe'
-   export RESOLVE_SCRIPT_API='C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting'
-   export RESOLVE_SCRIPT_LIB='C:\Program Files\Blackmagic Design\DaVinci Resolve\fusionscript.dll'
+   cp .env.example .env
+   # Edit .env with your paths
+   ```
+
+   Available settings in `.env`:
+   ```bash
+   # Project paths
+   RESOLVE_MCP_PROJECT=C:\Users\YourName\Projects\davinci-resolve-mcp
+   RESOLVE_MCP_PYTHON=C:\...\venv\Scripts\python.exe
+   RESOLVE_MCP_SCRIPT=C:\...\src\resolve_mcp_server.py
+
+   # DaVinci Resolve paths
+   RESOLVE_EXE=C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe
+   RESOLVE_SCRIPT_API=C:\ProgramData\Blackmagic Design\...
+   RESOLVE_SCRIPT_LIB=C:\Program Files\Blackmagic Design\...\fusionscript.dll
+
+   # Behavior
+   RESOLVE_WAIT_TIMEOUT=90
+   VERBOSE=0
    ```
 
 4. **Debug mode**: View detected paths with:

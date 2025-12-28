@@ -24,6 +24,33 @@
 set -euo pipefail
 
 # ============================================================================
+# Load .env Configuration
+# ============================================================================
+
+load_env() {
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local project_root
+    project_root="$(dirname "$script_dir")"
+
+    # Load .env from project root if it exists
+    local env_file="$project_root/.env"
+    if [ -f "$env_file" ]; then
+        # Source .env, ignoring comments and empty lines
+        set -a
+        # shellcheck source=/dev/null
+        source "$env_file"
+        set +a
+        if [ "${VERBOSE:-0}" = "1" ]; then
+            echo "Loaded configuration from: $env_file" >&2
+        fi
+    fi
+}
+
+# Load .env early
+load_env
+
+# ============================================================================
 # Path Detection Functions
 # ============================================================================
 
