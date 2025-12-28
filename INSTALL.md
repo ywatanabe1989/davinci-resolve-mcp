@@ -232,26 +232,23 @@ This script:
 
 ### WSL Configuration
 
+The WSL launcher script **automatically detects** paths for:
+- Project directory (from script location)
+- DaVinci Resolve executable (searches common install locations)
+- Python venv (in project directory)
+- Resolve scripting API and library paths
+
 1. **Install the project on Windows** (not in WSL filesystem):
    ```powershell
    # In PowerShell, clone to a Windows path
-   cd "C:\Program Files (x86)\ywatanabe"
+   cd "C:\Users\YourName\Projects"
    git clone https://github.com/ywatanabe1989/davinci-resolve-mcp.git
    cd davinci-resolve-mcp
    python -m venv venv
    .\venv\Scripts\pip install -r requirements.txt
    ```
 
-2. **Configure the WSL launcher script**:
-   Edit `scripts/wsl-launcher.sh` and adjust these paths:
-   ```bash
-   WIN_PROJECT='C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp'
-   WIN_PYTHON="$WIN_PROJECT\\venv\\Scripts\\python.exe"
-   WIN_SCRIPT="$WIN_PROJECT\\src\\resolve_mcp_server.py"
-   RESOLVE_EXE='C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe'
-   ```
-
-3. **Claude Code MCP Configuration** (`~/.claude.json`):
+2. **Claude Code MCP Configuration** (`~/.claude.json`):
    ```json
    {
      "mcpServers": {
@@ -263,11 +260,28 @@ This script:
    }
    ```
 
+3. **Optional: Override paths via environment variables**:
+   If auto-detection doesn't work for your setup, override with env vars:
+   ```bash
+   export RESOLVE_MCP_PROJECT='C:\custom\path\davinci-resolve-mcp'
+   export RESOLVE_MCP_PYTHON='C:\custom\path\venv\Scripts\python.exe'
+   export RESOLVE_MCP_SCRIPT='C:\custom\path\src\resolve_mcp_server.py'
+   export RESOLVE_EXE='D:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe'
+   export RESOLVE_SCRIPT_API='C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting'
+   export RESOLVE_SCRIPT_LIB='C:\Program Files\Blackmagic Design\DaVinci Resolve\fusionscript.dll'
+   ```
+
+4. **Debug mode**: View detected paths with:
+   ```bash
+   VERBOSE=1 ./scripts/wsl-launcher.sh
+   ```
+
 ### WSL Troubleshooting
 
 - **PowerShell not found**: Ensure `powershell.exe` is in your WSL PATH
 - **Scripting not enabled**: The script will show instructions if Resolve's external scripting is disabled
-- **Timeout errors**: Increase `max_wait` in the script if Resolve takes longer to start
+- **Timeout errors**: Set `RESOLVE_WAIT_TIMEOUT=120` for longer startup times
+- **Wrong paths detected**: Use `VERBOSE=1` to see detected paths, then override with env vars
 
 ## Support
 
