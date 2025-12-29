@@ -212,6 +212,90 @@ Both configurations have the same structure:
 }
 ```
 
+## WSL (Windows Subsystem for Linux) Setup
+
+For users running Claude Code or other MCP clients from WSL while using DaVinci Resolve on Windows:
+
+### WSL Launcher Script
+
+A dedicated WSL launcher script is provided that bridges WSL and Windows:
+
+```bash
+./scripts/wsl-launcher.sh
+```
+
+This script:
+- Detects if DaVinci Resolve is running on Windows
+- Automatically starts Resolve if not running
+- Waits for the scripting API to initialize
+- Starts the MCP server via PowerShell
+
+### WSL Configuration
+
+The WSL launcher script **automatically detects** paths for:
+- Project directory (from script location)
+- DaVinci Resolve executable (searches common install locations)
+- Python venv (in project directory)
+- Resolve scripting API and library paths
+
+1. **Install the project on Windows** (not in WSL filesystem):
+   ```powershell
+   # In PowerShell, clone to a Windows path
+   cd "C:\Users\YourName\Projects"
+   git clone https://github.com/ywatanabe1989/davinci-resolve-mcp.git
+   cd davinci-resolve-mcp
+   python -m venv venv
+   .\venv\Scripts\pip install -r requirements.txt
+   ```
+
+2. **Claude Code MCP Configuration** (`~/.claude.json`):
+   ```json
+   {
+     "mcpServers": {
+       "davinci-resolve": {
+         "command": "/path/to/davinci-resolve-mcp/scripts/wsl-launcher.sh",
+         "args": []
+       }
+     }
+   }
+   ```
+
+3. **Optional: Configure via .env file**:
+   If auto-detection doesn't work for your setup, create a `.env` file:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your paths
+   ```
+
+   Available settings in `.env`:
+   ```bash
+   # Project paths
+   RESOLVE_MCP_PROJECT=C:\Users\YourName\Projects\davinci-resolve-mcp
+   RESOLVE_MCP_PYTHON=C:\...\venv\Scripts\python.exe
+   RESOLVE_MCP_SCRIPT=C:\...\src\resolve_mcp_server.py
+
+   # DaVinci Resolve paths
+   RESOLVE_EXE=C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe
+   RESOLVE_SCRIPT_API=C:\ProgramData\Blackmagic Design\...
+   RESOLVE_SCRIPT_LIB=C:\Program Files\Blackmagic Design\...\fusionscript.dll
+
+   # Behavior
+   RESOLVE_WAIT_TIMEOUT=90
+   VERBOSE=0
+   ```
+
+4. **Debug mode**: View detected paths with:
+   ```bash
+   VERBOSE=1 ./scripts/wsl-launcher.sh
+   ```
+
+### WSL Troubleshooting
+
+- **PowerShell not found**: Ensure `powershell.exe` is in your WSL PATH
+- **Scripting not enabled**: The script will show instructions if Resolve's external scripting is disabled
+- **Timeout errors**: Set `RESOLVE_WAIT_TIMEOUT=120` for longer startup times
+- **Wrong paths detected**: Use `VERBOSE=1` to see detected paths, then override with env vars
+
 ## Support
 
 If you encounter any issues not covered in this guide, please file an issue on the GitHub repository. 

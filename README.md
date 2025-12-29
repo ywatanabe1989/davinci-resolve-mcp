@@ -1,17 +1,36 @@
 # DaVinci Resolve MCP Server
 
-[![Version](https://img.shields.io/badge/version-1.3.8-blue.svg)](https://github.com/samuelgursky/davinci-resolve-mcp/releases)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/ywatanabe1989/davinci-resolve-mcp/releases)
+[![CI](https://github.com/ywatanabe1989/davinci-resolve-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ywatanabe1989/davinci-resolve-mcp/actions/workflows/ci.yml)
 [![DaVinci Resolve](https://img.shields.io/badge/DaVinci%20Resolve-18.5+-darkred.svg)](https://www.blackmagicdesign.com/products/davinciresolve)
-[![Python](https://img.shields.io/badge/python-3.6+-green.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.9+-green.svg)](https://www.python.org/downloads/)
 [![macOS](https://img.shields.io/badge/macOS-stable-brightgreen.svg)](https://www.apple.com/macos/)
 [![Windows](https://img.shields.io/badge/Windows-stable-brightgreen.svg)](https://www.microsoft.com/windows)
+[![WSL](https://img.shields.io/badge/WSL-stable-brightgreen.svg)](https://docs.microsoft.com/en-us/windows/wsl/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A Model Context Protocol (MCP) server that connects AI coding assistants (Cursor, Claude Desktop) to DaVinci Resolve, enabling them to query and control DaVinci Resolve through natural language.
+A Model Context Protocol (MCP) server that connects AI coding assistants (Cursor, Claude Desktop, Claude Code) to DaVinci Resolve, enabling them to query and control DaVinci Resolve through natural language.
 
 ## Features
 
 For a comprehensive list of implemented and planned features, see [docs/FEATURES.md](docs/FEATURES.md).
+
+### New in v1.4.0: Modular API System
+
+- **50+ MCP Tools** for comprehensive Resolve control
+- **16 MCP Resources** for querying state
+- **113 Unit Tests** with GitHub Actions CI/CD
+- **WSL2 Support** for Linux-based workflows
+
+| Module | Capabilities |
+|--------|-------------|
+| Database Operations | Switch databases, folder navigation, project import/export |
+| Media Storage | Volume listing, file browsing, media pool integration |
+| Gallery Operations | Still albums, PowerGrade management, capture/export |
+| Timeline Advanced | Compound clips, Fusion clips, generators, titles |
+| Timeline Export | AAF/EDL/XML import/export, timecode, scene detection |
+| Marker Operations | Timeline/clip markers with custom data |
+| Capture Utilities | WSL-to-Windows screenshot capture |
 
 ## Requirements
 
@@ -34,7 +53,20 @@ For detailed installation instructions, please see [INSTALL.md](INSTALL.md). Thi
 |----------|--------|------------------|-------------|
 | macOS | ✅ Stable | `./install.sh` | `./run-now.sh` |
 | Windows | ✅ Stable | `install.bat` | `run-now.bat` |
-| Linux | ❌ Not supported | N/A | N/A |
+| WSL2 | ✅ Stable | `./scripts/wsl-launcher.sh` | See WSL section |
+
+### WSL2 Support (New in v1.4.0)
+
+Run from WSL2 while controlling DaVinci Resolve on Windows:
+
+```bash
+# Auto-detect Windows paths and launch
+./scripts/wsl-launcher.sh
+
+# Or configure manually with .env file
+cp .env.example .env
+# Edit paths as needed
+```
 
 ## Quick Start Guide
 
@@ -388,10 +420,17 @@ davinci-resolve-mcp/
 │   ├── restart-server.bat  # Server restart script (Windows)
 │   ├── run-now.sh          # Quick start script (Unix)
 │   └── run-now.bat         # Quick start script (Windows)
-├── resolve_mcp_server.py   # Main server implementation
 ├── src/                    # Source code
-│   ├── api/                # API implementation
-│   ├── features/           # Feature modules
+│   ├── main.py             # Entry point
+│   ├── resolve_mcp_server.py # Core MCP server
+│   ├── api/                # Modular API operations
+│   │   ├── database_operations.py
+│   │   ├── gallery_operations.py
+│   │   ├── marker_operations.py
+│   │   ├── media_storage_operations.py
+│   │   ├── timeline_advanced.py
+│   │   └── timeline_export.py
+│   ├── tools/              # MCP tool registration
 │   └── utils/              # Utility functions
 ├── logs/                   # Log files
 ├── tools/                  # Development tools
@@ -399,98 +438,20 @@ davinci-resolve-mcp/
 └── examples/               # Example code
 ```
 
-## License
-
-MIT
-
-## Acknowledgments
-
-- Blackmagic Design for DaVinci Resolve and its API
-- The MCP protocol team for enabling AI assistant integration
-
-## Author
-
-Samuel Gursky (samgursky@gmail.com)
-- GitHub: [github.com/samuelgursky](https://github.com/samuelgursky)
-
-## Future Plans
-
-- Windows and Linux support
-- Additional DaVinci Resolve features
-- Support for Claude Desktop
-
 ## Development
 
-If you'd like to contribute, please check the feature checklist in the repo and pick an unimplemented feature to work on. The code is structured with clear sections for different areas of functionality.
-
-## License
-
-MIT
-
-## Acknowledgments
-
-- Blackmagic Design for DaVinci Resolve and its API
-- The MCP protocol team for enabling AI assistant integration
-
-## Project Structure
-
-After cleanup, the project has the following structure:
-
-- `resolve_mcp_server.py` - The main MCP server implementation
-- `run-now.sh` - Quick start script that handles setup and runs the server
-- `setup.sh` - Complete setup script for installation
-- `check-resolve-ready.sh` - Pre-launch check to verify DaVinci Resolve is ready
-- `start-server.sh` - Script to start the server
-- `run-server.sh` - Simplified script to run the server directly
-
-**Key Directories:**
-- `src/` - Source code and modules
-- `assets/` - Project assets and resources
-- `logs/` - Log files directory
-- `scripts/` - Helper scripts
-
-When developing, it's recommended to use `./run-now.sh` which sets up the environment and launches the server in one step. 
+Contributions welcome! See the feature checklist and pick an unimplemented feature.
 
 ## Changelog
 
-See [docs/CHANGELOG.md](docs/CHANGELOG.md) for a detailed history of changes. 
+See [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 
-### Cursor-Specific Setup
+## License
 
-When integrating with Cursor, follow these specific steps:
+MIT
 
-1. Make sure DaVinci Resolve is running before starting Cursor
+## Acknowledgments
 
-2. Install required dependencies:
-   ```bash
-   # From the davinci-resolve-mcp directory:
-   pip install -r requirements.txt
-   ```
-   Note: This will install the MCP package and other dependencies automatically.
-
-3. Set up the MCP server configuration in Cursor:
-   
-   Create or edit `~/.cursor/mcp.json` on macOS (or `%USERPROFILE%\.cursor\mcp.json` on Windows):
-   
-   ```json
-   {
-     "mcpServers": {
-       "davinci-resolve": {
-         "name": "DaVinci Resolve MCP",
-         "command": "/path/to/your/venv/bin/python",
-         "args": [
-           "/path/to/your/davinci-resolve-mcp/src/main.py"
-         ]
-       }
-     }
-   }
-   ```
-   
-   **Important Notes:**
-   - Use `main.py` as the entry point (not `resolve_mcp_server.py`)
-   - Use absolute paths in the configuration
-
-4. Common issues:
-   - "Client closed" error: Check that paths are correct in mcp.json and dependencies are installed
-   - Connection problems: Make sure DaVinci Resolve is running before starting Cursor
-   - Environment variables: The main.py script will handle setting environment variables
+- Blackmagic Design for DaVinci Resolve and its API
+- The MCP protocol team for enabling AI assistant integration
+- Original author: Samuel Gursky ([github.com/samuelgursky](https://github.com/samuelgursky))
