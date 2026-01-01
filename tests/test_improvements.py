@@ -212,9 +212,7 @@ def test_error_handling_with_empty_timeline() -> bool:
 
     # First create a new empty timeline
     empty_timeline_name = f"Empty_Test_Timeline_{int(time.time())}"
-    send_request(
-        "mcp_davinci_resolve_create_timeline", {"name": empty_timeline_name}
-    )
+    send_request("mcp_davinci_resolve_create_timeline", {"name": empty_timeline_name})
 
     # Set it as current
     send_request(
@@ -252,9 +250,7 @@ def test_error_handling_with_empty_timeline() -> bool:
                 break
 
     # Clean up - delete the test timeline
-    send_request(
-        "mcp_davinci_resolve_delete_timeline", {"name": empty_timeline_name}
-    )
+    send_request("mcp_davinci_resolve_delete_timeline", {"name": empty_timeline_name})
 
     if success1 and improved_error:
         logger.info("✅ Error handling for empty timeline is working properly")
