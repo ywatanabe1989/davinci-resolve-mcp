@@ -6,57 +6,19 @@
 
 MCP server connecting AI assistants (Cursor, Claude Desktop, Claude Code) to DaVinci Resolve.
 
-## Requirements
-
-- DaVinci Resolve 18.5+ (running)
-- Python 3.9+
-
-## Installation
+## Quick Start
 
 ```bash
 git clone https://github.com/ywatanabe1989/davinci-resolve-mcp.git
 cd davinci-resolve-mcp
-
-# macOS/Linux
-./install.sh
-
-# Windows
-install.bat
+make
+make status  # Show configuration instructions
 ```
 
-## Configuration
+## Requirements
 
-### Cursor / Claude Desktop
-
-Add to `~/.cursor/mcp.json` (macOS) or `%APPDATA%\Cursor\mcp.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "davinci-resolve": {
-      "command": "/path/to/venv/bin/python",
-      "args": ["/path/to/davinci-resolve-mcp/src/main.py"]
-    }
-  }
-}
-```
-
-### Claude Code (WSL)
-
-Add to `~/.claude.json`:
-
-```json
-{
-  "mcpServers": {
-    "davinci-resolve": {
-      "command": "/path/to/davinci-resolve-mcp/scripts/wsl-launcher.sh",
-      "args": []
-    }
-  }
-}
-```
-
-Optional: Create `.env` from `.env.example` if auto-detection fails.
+- DaVinci Resolve 18.5+ (running)
+- Python 3.9+
 
 ## Features
 
@@ -65,20 +27,23 @@ Optional: Create `.env` from `.env.example` if auto-detection fails.
 | Project | List, open, create, save projects |
 | Timeline | Create, switch, add markers, import/export EDL/XML/AAF |
 | Media Pool | Import media, create bins, add clips to timeline |
+| Color | Color wheels, nodes, LUTs, presets |
 | Gallery | Still albums, PowerGrade management |
-| General | Get version, switch pages (Edit, Color, Fusion, etc.) |
+| Render | Add to queue, start render, manage jobs |
+| UI | Switch pages (Edit, Color, Fusion, Fairlight, Deliver) |
 
-See [docs/FEATURES.md](docs/FEATURES.md) for full list.
+See [docs/FEATURES.md](docs/FEATURES.md) for 100+ available functions.
 
 ## Troubleshooting
 
-1. Ensure DaVinci Resolve is running before starting the server
-2. Verify environment variables if connection fails:
-   - **macOS**: `RESOLVE_SCRIPT_API`, `RESOLVE_SCRIPT_LIB`, `PYTHONPATH`
-   - **Windows**: Same variables with Windows paths
-3. Check logs in `logs/` directory
+```bash
+make status  # Check configuration and get hints
+```
 
-See [INSTALL.md](INSTALL.md) for detailed troubleshooting.
+If connection fails:
+1. Ensure DaVinci Resolve is running
+2. Check `.env` configuration (copy from `.env.example`)
+3. Check `logs/` directory for errors
 
 ## License
 
