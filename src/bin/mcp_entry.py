@@ -23,7 +23,7 @@ def is_wsl() -> bool:
     try:
         with open("/proc/version", "r") as f:
             return "microsoft" in f.read().lower()
-    except:
+    except Exception:
         return False
 
 
@@ -101,7 +101,7 @@ def check_resolve_running(verbose: bool = False) -> bool:
             status = "running" if running else "not running"
             print(f"DaVinci Resolve: {status}", file=sys.stderr)
         return running
-    except:
+    except Exception:
         return False
 
 

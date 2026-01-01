@@ -252,7 +252,7 @@ def delete_timeline(resolve, name: str) -> str:
         if another_timeline:
             current_project.SetCurrentTimeline(another_timeline)
         else:
-            return f"Error: Cannot delete the only timeline in the project. Create a new timeline first."
+            return "Error: Cannot delete the only timeline in the project. Create a new timeline first."
 
     try:
         result = current_project.DeleteTimelines([target_timeline])

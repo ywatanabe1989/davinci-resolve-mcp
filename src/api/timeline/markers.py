@@ -70,7 +70,7 @@ def add_marker(
                 track_clips = current_timeline.GetItemListInTrack("video", track_idx)
                 if track_clips and len(track_clips) > 0:
                     clips.extend(track_clips)
-            except:
+            except Exception:
                 continue
 
         if not clips:

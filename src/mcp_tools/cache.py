@@ -296,7 +296,7 @@ def register_cache_tools(mcp, resolve, logger):
             try:
                 for clip in clips_to_process:
                     clip.ClearFlags("Green")
-            except:
+            except Exception:
                 pass
             return f"Error generating optimized media: {str(e)}"
 
@@ -364,7 +364,7 @@ def register_cache_tools(mcp, resolve, logger):
             try:
                 for clip in clips_to_process:
                     clip.ClearFlags("Green")
-            except:
+            except Exception:
                 pass
             return f"Error deleting optimized media: {str(e)}"
 

@@ -137,7 +137,7 @@ def get_render_queue_status(resolve) -> Dict[str, Any]:
                     )
                     if time_remaining:
                         job_info["time_remaining"] = time_remaining
-                except:
+                except Exception:
                     pass
 
             except Exception as e:
