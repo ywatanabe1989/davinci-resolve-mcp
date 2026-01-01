@@ -116,7 +116,7 @@ class TestSendKeyToResolve:
         with patch("src.utils.keyboard.core.get_platform_type", return_value="wsl"):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = Mock(stdout="SUCCESS: Sent key to Resolve")
-                result = send_key_to_resolve(" ", "Play/Pause")
+                send_key_to_resolve(" ", "Play/Pause")
 
                 mock_run.assert_called_once()
                 call_args = mock_run.call_args
