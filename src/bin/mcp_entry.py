@@ -150,7 +150,7 @@ def run_via_wsl(verbose: bool = False) -> int:
 
     # Build inline PowerShell script for proper stdio handling
     # Uses synchronous reads with threading for continuous bidirectional IO
-    ps_script = f'''
+    ps_script = f"""
 $env:PYTHONPATH = '{paths["project"]}'
 $env:RESOLVE_SCRIPT_API = '{paths["api"]}'
 $env:RESOLVE_SCRIPT_LIB = '{paths["lib"]}'
@@ -221,7 +221,7 @@ try {{
 }} catch {{}}
 
 exit $p.ExitCode
-'''
+"""
 
     if verbose:
         print("Using inline PowerShell with ProcessStartInfo", file=sys.stderr)
