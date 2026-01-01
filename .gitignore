@@ -95,4 +95,11 @@ logs/*
 *_backup/
 
 # Cursor
-.cursor/ 
+.cursor/
+
+# Claude Code
+.claude/
+
+# User-specific documentation
+docs/to_claude/
+docs/API_DOCS/
