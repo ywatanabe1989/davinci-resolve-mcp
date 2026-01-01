@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-DaVinci Resolve Color Page Operations
-Re-exports from split submodules for backward compatibility.
+DaVinci Resolve Color Operations - Split Module
+Re-exports all functions from submodules for backward compatibility.
 """
 
-# Re-export all functions from submodules
-from src.api.color.nodes import (
+from .nodes import (
     get_current_node,
     add_node,
     ensure_clip_selected,
 )
 
-from src.api.color.grades import (
+from .grades import (
     apply_lut,
     copy_grade,
 )
 
-from src.api.color.wheels import (
+from .wheels import (
     get_color_wheels,
     set_color_wheel_param,
 )

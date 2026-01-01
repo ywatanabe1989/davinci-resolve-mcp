@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-DaVinci Resolve MCP Server - Project Properties Utilities
-Re-exports from split submodules for backward compatibility.
+DaVinci Resolve Project Properties - Split Module
+Re-exports all functions from submodules for backward compatibility.
 """
 
-# Re-export all functions from submodules
-from src.utils.properties.core import (
+from .core import (
     PROJECT_PROPERTY_TYPES,
     get_all_project_properties,
     get_project_property,
@@ -14,7 +13,7 @@ from src.utils.properties.core import (
     set_timeline_format,
 )
 
-from src.utils.properties.settings import (
+from .settings import (
     get_superscale_settings,
     set_superscale_settings,
     get_color_settings,

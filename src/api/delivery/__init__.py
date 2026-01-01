@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
-DaVinci Resolve Delivery Page Operations
-Re-exports from split submodules for backward compatibility.
+DaVinci Resolve Delivery Operations - Split Module
+Re-exports all functions from submodules for backward compatibility.
 """
 
-# Re-export all functions from submodules
-from src.api.delivery.render import (
+from .render import (
     get_render_presets,
     add_to_render_queue,
     ensure_render_settings,
     validate_render_preset,
 )
 
-from src.api.delivery.queue import (
+from .queue import (
     start_render,
     get_render_queue_status,
     clear_render_queue,

@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-DaVinci Resolve Media Operations
-Re-exports from split submodules for backward compatibility.
+DaVinci Resolve Media Operations - Split Module
+Re-exports all functions from submodules for backward compatibility.
 """
 
-# Re-export all functions from submodules
-from src.api.media.pool import (
+from .pool import (
     list_media_pool_clips,
     import_media,
     create_bin,
@@ -15,7 +14,7 @@ from src.api.media.pool import (
     get_all_media_pool_clips,
 )
 
-from src.api.media.clips import (
+from .clips import (
     list_timeline_clips,
     add_clip_to_timeline,
     delete_media,
@@ -23,7 +22,7 @@ from src.api.media.clips import (
     create_sub_clip,
 )
 
-from src.api.media.sync import (
+from .sync import (
     auto_sync_audio,
     unlink_clips,
     relink_clips,

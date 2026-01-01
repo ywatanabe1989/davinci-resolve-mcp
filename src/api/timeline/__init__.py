@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-DaVinci Resolve Timeline Operations
-Re-exports from split submodules for backward compatibility.
+DaVinci Resolve Timeline Operations - Split Module
+Re-exports all functions from submodules for backward compatibility.
 """
 
-# Re-export all functions from submodules
-from src.api.timeline.basic import (
+from .basic import (
     list_timelines,
     get_current_timeline_info,
     create_timeline,
@@ -15,7 +14,7 @@ from src.api.timeline.basic import (
     get_timeline_tracks,
 )
 
-from src.api.timeline.markers import (
+from .markers import (
     add_marker,
 )
 
