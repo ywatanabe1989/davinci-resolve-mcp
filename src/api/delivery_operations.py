@@ -8,7 +8,6 @@ Re-exports from split submodules for backward compatibility.
 from src.api.delivery.render import (
     get_render_presets,
     add_to_render_queue,
-    ensure_render_settings,
     validate_render_preset,
 )
 
@@ -22,7 +21,6 @@ __all__ = [
     # Render operations
     "get_render_presets",
     "add_to_render_queue",
-    "ensure_render_settings",
     "validate_render_preset",
     # Queue operations
     "start_render",

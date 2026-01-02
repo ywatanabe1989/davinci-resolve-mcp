@@ -36,12 +36,33 @@ def register_delivery_tools(mcp, resolve, logger):
 
     @mcp.tool()
     def add_to_render_queue(
-        preset_name: str, timeline_name: str = None, use_in_out_range: bool = False
+        preset_name: str,
+        timeline_name: str = None,
+        use_in_out_range: bool = False,
+        target_dir: str = None,
+        custom_name: str = None,
     ) -> Dict[str, Any]:
-        """Add a timeline to the render queue with the specified preset."""
+        """Add a timeline to the render queue with the specified preset.
+
+        Args:
+            preset_name: Name of the render preset (e.g., 'H.264 Master', 'YouTube - 1080p')
+            timeline_name: Optional timeline name (uses current if not specified)
+            use_in_out_range: If True, only render the in/out range
+            target_dir: Optional output directory path (e.g., 'C:/output' or '/home/user/output')
+            custom_name: Optional custom filename for the output (without extension)
+        """
         from src.api.delivery_operations import add_to_render_queue as add_queue_func
 
-        return add_queue_func(resolve, preset_name, timeline_name, use_in_out_range)
+        # Build render_settings dict if custom options provided
+        render_settings = {}
+        if target_dir:
+            render_settings["TargetDir"] = target_dir
+        if custom_name:
+            render_settings["CustomName"] = custom_name
+
+        return add_queue_func(
+            resolve, preset_name, timeline_name, use_in_out_range, render_settings if render_settings else None
+        )
 
     @mcp.tool()
     def start_render() -> Dict[str, Any]:
@@ -256,9 +277,7 @@ def register_delivery_tools(mcp, resolve, logger):
         try:
             result = target_clip.ClearTranscription()
             if result:
-                return (
-                    f"Successfully cleared audio transcription for clip '{clip_name}'"
-                )
+                return f"Successfully cleared audio transcription for clip '{clip_name}'"
             else:
                 return f"Failed to clear audio transcription for clip '{clip_name}'"
         except Exception as e:

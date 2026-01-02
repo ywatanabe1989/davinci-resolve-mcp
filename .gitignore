@@ -92,3 +92,4 @@ to_clean/
 # Configuration with sensitive info
 claude_desktop_config.json
 !config-templates/*.template.json
+debug_render.py

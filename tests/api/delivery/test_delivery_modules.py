@@ -11,7 +11,7 @@ class TestDeliveryModuleImports:
         from src.api.delivery import (
             get_render_presets,
             add_to_render_queue,
-            ensure_render_settings,
+            ensure_deliver_page,
             validate_render_preset,
             start_render,
             get_render_queue_status,
@@ -20,7 +20,7 @@ class TestDeliveryModuleImports:
 
         assert callable(get_render_presets)
         assert callable(add_to_render_queue)
-        assert callable(ensure_render_settings)
+        assert callable(ensure_deliver_page)
         assert callable(validate_render_preset)
         assert callable(start_render)
         assert callable(get_render_queue_status)

@@ -14,6 +14,112 @@ import sys
 import subprocess
 import platform
 from pathlib import Path
+from datetime import datetime
+
+# Log file for debugging (doesn't interfere with MCP stdio)
+LOG_FILE = Path(__file__).parent.parent.parent / "logs" / "mcp_entry.log"
+
+
+def log(msg: str, level: str = "INFO"):
+    """Write to log file for debugging."""
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(LOG_FILE, "a") as f:
+            f.write(f"[{timestamp}] [{level}] {msg}\n")
+    except Exception:
+        pass  # Silently ignore logging errors
+
+
+# Required packages for MCP server
+REQUIRED_PACKAGES = ["mcp"]
+
+
+def check_windows_python_exists() -> tuple[bool, str]:
+    """Check if Windows Python is available."""
+    try:
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", "python --version"],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            return True, result.stdout.strip()
+        return False, "Python not found"
+    except Exception as e:
+        return False, str(e)
+
+
+def check_windows_package(python_path: str, package: str) -> bool:
+    """Check if a package is installed in Windows Python."""
+    try:
+        result = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-Command",
+                f"& '{python_path}' -c \"import {package}\"",
+            ],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def check_dependencies(python_path: str) -> tuple[bool, list[str]]:
+    """Check if all required packages are installed.
+
+    Returns:
+        tuple: (all_ok, list of missing packages)
+    """
+    missing = []
+    for pkg in REQUIRED_PACKAGES:
+        if not check_windows_package(python_path, pkg):
+            missing.append(pkg)
+    return len(missing) == 0, missing
+
+
+def get_wsl_unc_path() -> str:
+    """Get the UNC path to access WSL from Windows."""
+    # Get distro name
+    try:
+        with open("/etc/os-release") as f:
+            for line in f:
+                if line.startswith("ID="):
+                    distro = line.strip().split("=")[1].strip('"')
+                    # Capitalize first letter for Windows UNC path
+                    distro = distro.capitalize()
+                    break
+            else:
+                distro = "Ubuntu"  # Default
+    except Exception:
+        distro = "Ubuntu"
+
+    project_root = get_project_root()
+    # Convert /home/user/path to \\wsl.localhost\Distro\home\user\path
+    win_path = str(project_root).replace("/", "\\")
+    return f"\\\\wsl.localhost\\{distro}{win_path}"
+
+
+def print_dependency_error(python_path: str, missing_packages: list[str]):
+    """Print error message for missing dependencies."""
+    print("\n[MCP] ERROR: Missing required Python packages on Windows!", file=sys.stderr)
+    print(f"[MCP] Python: {python_path}", file=sys.stderr)
+    print(f"[MCP] Missing: {', '.join(missing_packages)}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("[MCP] To fix, run in PowerShell:", file=sys.stderr)
+    print(f"  {python_path} -m pip install {' '.join(missing_packages)}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("[MCP] Or install all requirements:", file=sys.stderr)
+    win_project = get_wsl_unc_path()
+    print(f'  {python_path} -m pip install -r "{win_project}\\requirements.txt"', file=sys.stderr)
+    print("", file=sys.stderr)
 
 
 def is_wsl() -> bool:
@@ -58,13 +164,85 @@ def win_to_wsl_path(win_path: str) -> str:
     return win_path
 
 
-def get_windows_paths(config: dict) -> dict:
-    """Get Windows paths from config or defaults."""
-    win_project = config.get("RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp")
+def wsl_to_win_path(wsl_path: str) -> str:
+    """Convert WSL path to Windows-accessible path.
+
+    /mnt/c/foo -> C:\\foo
+    /home/user/foo -> \\\\wsl.localhost\\Ubuntu\\home\\user\\foo
+    """
+    if wsl_path.startswith("/mnt/") and len(wsl_path) > 6:
+        drive = wsl_path[5].upper()
+        rest = wsl_path[6:].replace("/", "\\")
+        return f"{drive}:{rest}"
+    # For WSL native paths, use UNC path
+    if wsl_path.startswith("/"):
+        # Get distro name
+        try:
+            with open("/etc/os-release") as f:
+                for line in f:
+                    if line.startswith("ID="):
+                        distro = line.strip().split("=")[1].strip('"')
+                        distro = distro.capitalize()
+                        break
+                else:
+                    distro = "Ubuntu"
+        except Exception:
+            distro = "Ubuntu"
+        win_path = wsl_path.replace("/", "\\")
+        return f"\\\\wsl.localhost\\{distro}{win_path}"
+    return wsl_path
+
+
+def find_windows_python(project_dir: str, verbose: bool = False) -> tuple[str, str | None]:
+    """Find Python executable, checking multiple venv locations.
+
+    Returns:
+        tuple: (python_path, venv_name or None if using system Python)
+    """
+    # Check common venv names in order of preference
+    venv_names = [".venv_win", ".venv", "venv", ".env"]
+
+    for venv_name in venv_names:
+        python_path = f"{project_dir}\\{venv_name}\\Scripts\\python.exe"
+        wsl_check_path = win_to_wsl_path(python_path)
+        try:
+            if Path(wsl_check_path).exists():
+                return python_path, venv_name
+        except OSError:
+            # WSL may throw errors when checking paths that don't exist
+            continue
+
+    # Fallback: system Python on Windows
+    return "python", None
+
+
+def print_venv_setup_instructions(project_dir: str):
+    """Print instructions - venv doesn't work on UNC paths, use system Python."""
+    # Note: venv on UNC paths (\\wsl.localhost\...) creates broken launchers
+    # So we just inform the user we're using system Python
+    print("[MCP] Using Windows system Python (venv not supported on UNC paths)", file=sys.stderr)
+
+
+def get_windows_paths(config: dict, verbose: bool = False) -> dict:
+    """Get Windows paths from config or auto-detect."""
+    # Auto-detect project path from this script's location
+    project_root = get_project_root()
+    win_project = config.get("RESOLVE_MCP_PROJECT") or wsl_to_win_path(str(project_root))
+
+    # Auto-detect Python
+    if config.get("RESOLVE_MCP_PYTHON"):
+        win_python = config["RESOLVE_MCP_PYTHON"]
+        venv_name = "configured"
+    else:
+        win_python, venv_name = find_windows_python(win_project, verbose)
+        if venv_name is None:
+            print_venv_setup_instructions(win_project)
+
     return {
         "project": win_project,
-        "python": f"{win_project}\\.venv_win\\Scripts\\python.exe",
-        "script": f"{win_project}\\src\\__main__.py",  # Entry point for full tool registration
+        "python": win_python,
+        "venv": venv_name,
+        "script": f"{win_project}\\src\\__main__.py",
         "resolve_exe": config.get(
             "RESOLVE_EXE",
             r"C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe",
@@ -90,6 +268,7 @@ def check_resolve_running(verbose: bool = False) -> bool:
                 "-Command",
                 "Get-Process -Name 'Resolve' -ErrorAction SilentlyContinue",
             ],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             timeout=5,
@@ -111,12 +290,24 @@ def run_via_wsl(verbose: bool = False) -> int:
     """
     import time
 
+    log("=== Starting MCP Entry Point ===")
+    log(f"Verbose mode: {verbose}")
+
     # Always show status to stderr (doesn't interfere with MCP stdio protocol)
     print("[MCP] Initializing WSL bridge to Windows...", file=sys.stderr)
 
     # Load config from .env
     config = load_env_config()
-    paths = get_windows_paths(config)
+    paths = get_windows_paths(config, verbose)
+    log(f"Windows paths: project={paths['project']}")
+
+    # Check dependencies before proceeding
+    print("[MCP] Checking dependencies...", file=sys.stderr)
+    deps_ok, missing = check_dependencies(paths["python"])
+    if not deps_ok:
+        print_dependency_error(paths["python"], missing)
+        return 1
+    print("[MCP] Dependencies OK", file=sys.stderr)
 
     # Check if Resolve is running
     if not check_resolve_running(verbose):
@@ -128,6 +319,7 @@ def run_via_wsl(verbose: bool = False) -> int:
                 "-Command",
                 f"Start-Process '{paths['resolve_exe']}'",
             ],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
         )
         # Wait for Resolve to start
@@ -145,100 +337,42 @@ def run_via_wsl(verbose: bool = False) -> int:
     else:
         print("[MCP] DaVinci Resolve is running", file=sys.stderr)
 
-    print(f"[MCP] Using Python: {paths['python']}", file=sys.stderr)
+    venv_info = f" (from {paths['venv']}/)" if paths["venv"] else " (system)"
+    print(f"[MCP] Using Python{venv_info}: {paths['python']}", file=sys.stderr)
     print("[MCP] Starting server (stdio mode)...", file=sys.stderr)
 
     if verbose:
         print(f"[MCP] Project: {paths['project']}", file=sys.stderr)
         print(f"[MCP] Script: {paths['script']}", file=sys.stderr)
 
-    # Build inline PowerShell script for proper stdio handling
-    # Uses synchronous reads with threading for continuous bidirectional IO
+    # Build PowerShell command to run Python MCP server
+    # Use Start-Process with -Wait for simpler handling
     ps_script = f"""
 $env:PYTHONPATH = '{paths["project"]}'
 $env:RESOLVE_SCRIPT_API = '{paths["api"]}'
 $env:RESOLVE_SCRIPT_LIB = '{paths["lib"]}'
-
-$pinfo = New-Object System.Diagnostics.ProcessStartInfo
-$pinfo.FileName = '{paths["python"]}'
-$pinfo.Arguments = '"{paths["script"]}"'
-$pinfo.RedirectStandardInput = $true
-$pinfo.RedirectStandardOutput = $true
-$pinfo.RedirectStandardError = $true
-$pinfo.UseShellExecute = $false
-$pinfo.CreateNoWindow = $true
-
-$p = New-Object System.Diagnostics.Process
-$p.StartInfo = $pinfo
-$p.Start() | Out-Null
-
-# Background runspace to read stdout and print it
-$stdoutRunspace = [runspacefactory]::CreateRunspace()
-$stdoutRunspace.Open()
-$stdoutPS = [powershell]::Create()
-$stdoutPS.Runspace = $stdoutRunspace
-$stdoutPS.AddScript({{
-    param($reader)
-    while ($true) {{
-        $line = $reader.ReadLine()
-        if ($null -eq $line) {{ break }}
-        [Console]::Out.WriteLine($line)
-        [Console]::Out.Flush()
-    }}
-}}).AddArgument($p.StandardOutput) | Out-Null
-$stdoutHandle = $stdoutPS.BeginInvoke()
-
-# Background runspace for stderr
-$stderrRunspace = [runspacefactory]::CreateRunspace()
-$stderrRunspace.Open()
-$stderrPS = [powershell]::Create()
-$stderrPS.Runspace = $stderrRunspace
-$stderrPS.AddScript({{
-    param($reader)
-    while ($true) {{
-        $line = $reader.ReadLine()
-        if ($null -eq $line) {{ break }}
-        [Console]::Error.WriteLine($line)
-    }}
-}}).AddArgument($p.StandardError) | Out-Null
-$stderrHandle = $stderrPS.BeginInvoke()
-
-# Main thread: forward stdin
-while (-not $p.HasExited) {{
-    $line = [Console]::In.ReadLine()
-    if ($null -eq $line) {{ break }}
-    try {{
-        $p.StandardInput.WriteLine($line)
-        $p.StandardInput.Flush()
-    }} catch {{ break }}
-}}
-
-try {{ $p.StandardInput.Close() }} catch {{}}
-$p.WaitForExit(30000)
-
-# Cleanup
-try {{
-    $stdoutPS.Stop()
-    $stderrPS.Stop()
-    $stdoutRunspace.Close()
-    $stderrRunspace.Close()
-}} catch {{}}
-
-exit $p.ExitCode
+Set-Location '{paths["project"]}'
+& python -m src
 """
 
     if verbose:
         print("Using inline PowerShell with ProcessStartInfo", file=sys.stderr)
 
+    log("Starting subprocess.Popen for PowerShell")
+    log(f"stdin={sys.stdin}, stdout={sys.stdout}")
+
     # Run PowerShell with the inline script
     process = subprocess.Popen(
-        ["powershell.exe", "-NoProfile", "-Command", ps_script],
+        ["powershell.exe", "-NoProfile", "-NoLogo", "-Command", ps_script],
         stdin=sys.stdin,
         stdout=sys.stdout,
         stderr=sys.stderr if verbose else subprocess.DEVNULL,
     )
 
-    return process.wait()
+    log(f"PowerShell process started with PID: {process.pid}")
+    result = process.wait()
+    log(f"PowerShell process exited with code: {result}")
+    return result
 
 
 def run_native(verbose: bool = False) -> int:
