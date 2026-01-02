@@ -69,7 +69,7 @@ def apply_lut(resolve, lut_path: str, node_index: int = None) -> str:
             try:
                 node_name = current_grade.GetNodeName(target_node_index)
                 return f"Successfully applied LUT '{os.path.basename(lut_path)}' to node '{node_name}' (index {target_node_index})"
-            except:
+            except Exception:
                 return f"Successfully applied LUT '{os.path.basename(lut_path)}' to node {target_node_index}"
         else:
             return f"Failed to apply LUT to node {target_node_index}"

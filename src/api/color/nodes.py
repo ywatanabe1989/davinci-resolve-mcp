@@ -111,22 +111,22 @@ def get_current_node(resolve) -> Dict[str, Any]:
         try:
             node_name = current_grade.GetNodeName(current_node_index)
             node_info["name"] = node_name
-        except:
+        except Exception:
             node_info["name"] = f"Node {current_node_index}"
 
         try:
             properties = {}
             try:
                 properties["enabled"] = current_grade.IsNodeEnabled(current_node_index)
-            except:
+            except Exception:
                 pass
             try:
                 properties["type"] = current_grade.GetNodeType(current_node_index)
-            except:
+            except Exception:
                 pass
             if properties:
                 node_info["properties"] = properties
-        except:
+        except Exception:
             pass
 
         return node_info

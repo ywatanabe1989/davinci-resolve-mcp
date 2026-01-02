@@ -154,7 +154,7 @@ def get_lua_table_keys(lua_table: Any) -> List[str]:
         try:
             # Some DaVinci Resolve objects have a GetKeyList() method
             return lua_table.GetKeyList()
-        except:
+        except Exception:
             pass
 
     # Try different iteration methods that might work with Lua tables
@@ -163,7 +163,7 @@ def get_lua_table_keys(lua_table: Any) -> List[str]:
         for key in lua_table:
             keys.append(key)
         return keys
-    except:
+    except Exception:
         pass
 
     # Try manual iteration with pairs-like behavior (if available)
@@ -202,7 +202,7 @@ def convert_lua_to_python(lua_obj: Any) -> Any:
                     value = lua_obj[key]
                     # Recursively convert nested Lua objects
                     result[key] = convert_lua_to_python(value)
-                except:
+                except Exception:
                     result[key] = None
             return result
 
@@ -216,13 +216,13 @@ def convert_lua_to_python(lua_obj: Any) -> Any:
                     value = lua_obj[index]
                     result.append(convert_lua_to_python(value))
                     index += 1
-                except:
+                except Exception:
                     break
 
             # If we found items, return as list
             if result:
                 return result
-        except:
+        except Exception:
             pass
 
     # If conversion failed, return string representation

@@ -271,6 +271,6 @@ def create_sub_clip(
     except Exception as e:
         try:
             source_clip.ClearMarkInOut()
-        except:
+        except Exception:
             pass
         return f"Error creating subclip: {str(e)}"

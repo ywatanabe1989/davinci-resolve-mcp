@@ -57,7 +57,7 @@ def get_color_wheels(resolve, node_index: int = None) -> Dict[str, Any]:
         node_name = ""
         try:
             node_name = current_grade.GetNodeName(target_node_index)
-        except:
+        except Exception:
             node_name = f"Node {target_node_index}"
 
         color_wheels = {
@@ -108,7 +108,7 @@ def get_color_wheels(resolve, node_index: int = None) -> Dict[str, Any]:
                     additional_controls["contrast"] = current_grade.GetContrast(
                         target_node_index
                     )
-            except:
+            except Exception:
                 pass
 
             try:
@@ -116,7 +116,7 @@ def get_color_wheels(resolve, node_index: int = None) -> Dict[str, Any]:
                     additional_controls["saturation"] = current_grade.GetSaturation(
                         target_node_index
                     )
-            except:
+            except Exception:
                 pass
 
             try:
@@ -124,7 +124,7 @@ def get_color_wheels(resolve, node_index: int = None) -> Dict[str, Any]:
                     additional_controls["color_temp"] = current_grade.GetColorTemp(
                         target_node_index
                     )
-            except:
+            except Exception:
                 pass
 
             try:
@@ -132,12 +132,12 @@ def get_color_wheels(resolve, node_index: int = None) -> Dict[str, Any]:
                     additional_controls["tint"] = current_grade.GetTint(
                         target_node_index
                     )
-            except:
+            except Exception:
                 pass
 
             if additional_controls:
                 color_wheels["additional_controls"] = additional_controls
-        except:
+        except Exception:
             pass
 
         return color_wheels
