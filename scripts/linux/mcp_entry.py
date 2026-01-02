@@ -58,15 +58,71 @@ def win_to_wsl_path(win_path: str) -> str:
     return win_path
 
 
-def get_windows_paths(config: dict) -> dict:
-    """Get Windows paths from config or defaults."""
-    win_project = config.get(
-        "RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp"
-    )
+def wsl_to_win_path(wsl_path: str) -> str:
+    """Convert WSL path to Windows path. /mnt/c/foo -> C:\\foo"""
+    if wsl_path.startswith("/mnt/") and len(wsl_path) > 6:
+        drive = wsl_path[5].upper()
+        rest = wsl_path[6:].replace("/", "\\")
+        return f"{drive}:{rest}"
+    return wsl_path
+
+
+def find_windows_python(project_dir: str, verbose: bool = False) -> tuple[str, str | None]:
+    """Find Python executable, checking multiple venv locations.
+
+    Returns:
+        tuple: (python_path, venv_name or None if using system Python)
+    """
+    # Check common venv names in order of preference
+    venv_names = [".venv_win", ".venv", "venv", ".env"]
+
+    for venv_name in venv_names:
+        python_path = f"{project_dir}\\{venv_name}\\Scripts\\python.exe"
+        wsl_check_path = win_to_wsl_path(python_path)
+        try:
+            if Path(wsl_check_path).exists():
+                return python_path, venv_name
+        except OSError:
+            # WSL may throw errors when checking paths that don't exist
+            continue
+
+    # Fallback: system Python on Windows
+    return "python", None
+
+
+def print_venv_setup_instructions(project_dir: str):
+    """Print instructions for setting up Windows venv from WSL."""
+    print("\n[MCP] No Windows Python venv found.", file=sys.stderr)
+    print("[MCP] For best results, create a Windows venv:", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("  # In PowerShell (as Administrator):", file=sys.stderr)
+    print(f'  cd "{project_dir}"', file=sys.stderr)
+    print("  python -m venv .venv_win", file=sys.stderr)
+    print("  .\\.venv_win\\Scripts\\pip install -r requirements.txt", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("[MCP] Falling back to system Python...", file=sys.stderr)
+
+
+def get_windows_paths(config: dict, verbose: bool = False) -> dict:
+    """Get Windows paths from config or auto-detect."""
+    # Auto-detect project path from this script's location
+    project_root = get_project_root()
+    win_project = config.get("RESOLVE_MCP_PROJECT") or wsl_to_win_path(str(project_root))
+
+    # Auto-detect Python
+    if config.get("RESOLVE_MCP_PYTHON"):
+        win_python = config["RESOLVE_MCP_PYTHON"]
+        venv_name = "configured"
+    else:
+        win_python, venv_name = find_windows_python(win_project, verbose)
+        if venv_name is None:
+            print_venv_setup_instructions(win_project)
+
     return {
         "project": win_project,
-        "python": f"{win_project}\\.venv_win\\Scripts\\python.exe",
-        "script": f"{win_project}\\src\\__main__.py",  # Entry point for full tool registration
+        "python": win_python,
+        "venv": venv_name,
+        "script": f"{win_project}\\src\\__main__.py",
         "resolve_exe": config.get(
             "RESOLVE_EXE",
             r"C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe",
@@ -113,14 +169,16 @@ def run_via_wsl(verbose: bool = False) -> int:
     """
     import time
 
+    # Always show status to stderr (doesn't interfere with MCP stdio protocol)
+    print("[MCP] Initializing WSL bridge to Windows...", file=sys.stderr)
+
     # Load config from .env
     config = load_env_config()
-    paths = get_windows_paths(config)
+    paths = get_windows_paths(config, verbose)
 
     # Check if Resolve is running
     if not check_resolve_running(verbose):
-        if verbose:
-            print("Starting DaVinci Resolve...", file=sys.stderr)
+        print("[MCP] Starting DaVinci Resolve...", file=sys.stderr)
         subprocess.run(
             [
                 "powershell.exe",
@@ -131,22 +189,27 @@ def run_via_wsl(verbose: bool = False) -> int:
             capture_output=True,
         )
         # Wait for Resolve to start
-        for _ in range(30):
+        for i in range(30):
             time.sleep(2)
             if check_resolve_running(verbose=False):
-                if verbose:
-                    print(
-                        "DaVinci Resolve started, waiting for API...", file=sys.stderr
-                    )
+                print("[MCP] DaVinci Resolve started, waiting for API...", file=sys.stderr)
                 time.sleep(10)  # Extra time for API
                 break
+            if i % 5 == 0:
+                print(f"[MCP] Waiting for Resolve... ({i * 2}s)", file=sys.stderr)
         else:
-            print("ERROR: Timeout waiting for DaVinci Resolve", file=sys.stderr)
+            print("[MCP] ERROR: Timeout waiting for DaVinci Resolve", file=sys.stderr)
             return 1
+    else:
+        print("[MCP] DaVinci Resolve is running", file=sys.stderr)
+
+    venv_info = f" (from {paths['venv']}/)" if paths["venv"] else " (system)"
+    print(f"[MCP] Using Python{venv_info}: {paths['python']}", file=sys.stderr)
+    print("[MCP] Starting server (stdio mode)...", file=sys.stderr)
 
     if verbose:
-        print(f"Project: {paths['project']}", file=sys.stderr)
-        print(f"Script: {paths['script']}", file=sys.stderr)
+        print(f"[MCP] Project: {paths['project']}", file=sys.stderr)
+        print(f"[MCP] Script: {paths['script']}", file=sys.stderr)
 
     # Build inline PowerShell script for proper stdio handling
     # Uses synchronous reads with threading for continuous bidirectional IO
