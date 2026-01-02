@@ -60,13 +60,11 @@ def win_to_wsl_path(win_path: str) -> str:
 
 def get_windows_paths(config: dict) -> dict:
     """Get Windows paths from config or defaults."""
-    win_project = config.get(
-        "RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp"
-    )
+    win_project = config.get("RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp")
     return {
         "project": win_project,
         "python": f"{win_project}\\.venv_win\\Scripts\\python.exe",
-        "script": f"{win_project}\\src\\main.py",  # Use main.py for full tool registration
+        "script": f"{win_project}\\src\\__main__.py",  # Entry point for full tool registration
         "resolve_exe": config.get(
             "RESOLVE_EXE",
             r"C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe",
@@ -135,9 +133,7 @@ def run_via_wsl(verbose: bool = False) -> int:
             time.sleep(2)
             if check_resolve_running(verbose=False):
                 if verbose:
-                    print(
-                        "DaVinci Resolve started, waiting for API...", file=sys.stderr
-                    )
+                    print("DaVinci Resolve started, waiting for API...", file=sys.stderr)
                 time.sleep(10)  # Extra time for API
                 break
         else:
@@ -250,7 +246,7 @@ def run_native(verbose: bool = False) -> int:
         logging.disable(logging.CRITICAL)
 
     # Import and run
-    from src.main import main
+    from src.__main__ import main
 
     return main()
 

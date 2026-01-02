@@ -1,1 +1,1 @@
-src/resolve_mcp_server.py
+src/__main__.py
