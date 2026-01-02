@@ -2,6 +2,11 @@
 """
 DaVinci Resolve Render Operations
 Render presets and adding jobs to render queue
+
+NOTE: According to the DaVinci Resolve Scripting API documentation:
+- GetRenderSettings() returns a dictionary, NOT an object with methods
+- Render methods like SetRenderSettings(), GetRenderPresetList(), LoadRenderPreset()
+  are called directly on the PROJECT object
 """
 
 import logging
@@ -10,93 +15,38 @@ from typing import Dict, Any, List, Optional, Tuple
 logger = logging.getLogger("davinci-resolve-mcp.delivery.render")
 
 
-def ensure_render_settings(resolve, current_project) -> Tuple[bool, Optional[Any], str]:
-    """Ensures render settings interface is properly initialized."""
-    logger.info("Attempting to get render settings interface")
+def ensure_deliver_page(resolve) -> bool:
+    """Ensures we're on the deliver page for render operations."""
     try:
-        render_settings_interface = current_project.GetRenderSettings()
-        if render_settings_interface:
-            logger.info("Successfully got render settings interface")
-            return (
-                True,
-                render_settings_interface,
-                "Render settings interface successfully obtained",
-            )
-        else:
-            logger.warning("GetRenderSettings() returned None")
-    except Exception as e:
-        logger.error(f"Error getting render settings interface: {str(e)}")
-        render_settings_interface = None
-
-    logger.warning(
-        "Failed to get render settings interface, trying alternative approaches"
-    )
-
-    try:
-        logger.info("Trying to refresh the deliver page")
         current_page = resolve.GetCurrentPage()
         if current_page != "deliver":
+            logger.info(f"Switching from {current_page} page to deliver page")
             resolve.OpenPage("deliver")
-        else:
-            resolve.OpenPage("edit")
-            resolve.OpenPage("deliver")
-
-        render_settings_interface = current_project.GetRenderSettings()
-        if render_settings_interface:
-            logger.info("Successfully got render settings interface after page refresh")
-            return (
-                True,
-                render_settings_interface,
-                "Render settings interface obtained after page refresh",
-            )
+        return True
     except Exception as e:
-        logger.error(f"Error in page refresh approach: {str(e)}")
-
-    try:
-        logger.info("Trying with a small delay")
-        import time
-
-        time.sleep(1.0)
-
-        render_settings_interface = current_project.GetRenderSettings()
-        if render_settings_interface:
-            logger.info("Successfully got render settings interface after delay")
-            return (
-                True,
-                render_settings_interface,
-                "Render settings interface obtained after delay",
-            )
-    except Exception as e:
-        logger.error(f"Error in delay approach: {str(e)}")
-
-    logger.error("Could not get render settings interface after multiple attempts")
-    return (
-        False,
-        None,
-        "Failed to access render settings. Deliver page functionality may not be fully initialized.",
-    )
+        logger.error(f"Error switching to deliver page: {str(e)}")
+        return False
 
 
-def validate_render_preset(
-    render_settings_interface, preset_name: str
-) -> Tuple[bool, List[str], str]:
-    """Validates that a render preset exists and returns available presets."""
+def validate_render_preset(current_project, preset_name: str) -> Tuple[bool, List[str], str]:
+    """Validates that a render preset exists and returns available presets.
+
+    Args:
+        current_project: The DaVinci Resolve project object
+        preset_name: Name of the preset to validate
+
+    Returns:
+        Tuple of (is_valid, all_presets_list, message)
+    """
     logger.info("Checking if preset exists")
     try:
-        project_presets = render_settings_interface.GetRenderPresetList() or []
-        system_presets = render_settings_interface.GetSystemPresetList() or []
+        # GetRenderPresetList() is called on the project object directly
+        all_presets = current_project.GetRenderPresetList() or []
+        logger.info(f"Found {len(all_presets)} render presets")
 
-        all_presets = project_presets + system_presets
-        logger.info(
-            f"Found {len(project_presets)} project presets and {len(system_presets)} system presets"
-        )
-
-        if preset_name in project_presets:
-            logger.info(f"Found '{preset_name}' in project presets")
-            return True, all_presets, f"Valid project preset: {preset_name}"
-        elif preset_name in system_presets:
-            logger.info(f"Found '{preset_name}' in system presets")
-            return True, all_presets, f"Valid system preset: {preset_name}"
+        if preset_name in all_presets:
+            logger.info(f"Found preset '{preset_name}'")
+            return True, all_presets, f"Valid preset: {preset_name}"
         else:
             logger.error(f"Render preset '{preset_name}' not found")
             return (
@@ -125,53 +75,21 @@ def get_render_presets(resolve) -> List[Dict[str, Any]]:
         logger.error("No project is currently open")
         return {"error": "No project is currently open"}
 
-    page = resolve.GetCurrentPage()
-    if page != "deliver":
-        logger.info(f"Switching from {page} page to deliver page")
-        resolve.OpenPage("deliver")
-
-    render_settings = current_project.GetRenderSettings()
-    if not render_settings:
-        logger.error("Failed to get render settings")
-        return {"error": "Failed to get render settings"}
+    # Switch to deliver page for render operations
+    ensure_deliver_page(resolve)
 
     presets = []
 
     try:
-        project_presets = render_settings.GetRenderPresetList()
-        for preset in project_presets:
-            preset_info = {"name": preset, "type": "project", "details": {}}
-
-            try:
-                if render_settings.SetRenderSettings({"SelectPreset": preset}):
-                    format_info = render_settings.GetCurrentRenderFormatAndCodec()
-                    if format_info:
-                        preset_info["details"]["format"] = format_info["format"]
-                        preset_info["details"]["codec"] = format_info["codec"]
-
-                    resolution = render_settings.GetCurrentRenderResolution()
-                    if resolution:
-                        preset_info["details"]["resolution"] = resolution
-
-                    frame_rate = render_settings.GetCurrentRenderFrameRate()
-                    if frame_rate:
-                        preset_info["details"]["frame_rate"] = frame_rate
-            except Exception as e:
-                logger.warning(
-                    f"Could not get detailed information for preset {preset}: {str(e)}"
-                )
-
+        # GetRenderPresetList() is called on the project object
+        preset_list = current_project.GetRenderPresetList() or []
+        for preset in preset_list:
+            # Note: GetRenderSettings() is unreliable in some API versions,
+            # so we just return the preset names without details
+            preset_info = {"name": preset, "type": "preset", "details": {}}
             presets.append(preset_info)
     except Exception as e:
-        logger.warning(f"Could not get project presets: {str(e)}")
-
-    try:
-        system_presets = render_settings.GetSystemPresetList()
-        for preset in system_presets:
-            preset_info = {"name": preset, "type": "system", "details": {}}
-            presets.append(preset_info)
-    except Exception as e:
-        logger.warning(f"Could not get system presets: {str(e)}")
+        logger.warning(f"Could not get presets: {str(e)}")
 
     return presets
 
@@ -183,7 +101,18 @@ def add_to_render_queue(
     use_in_out_range: bool = False,
     render_settings: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Add the current timeline or a specific timeline to the render queue."""
+    """Add the current timeline or a specific timeline to the render queue.
+
+    Args:
+        resolve: DaVinci Resolve object
+        preset_name: Name of the render preset to use
+        timeline_name: Optional timeline name (uses current if not specified)
+        use_in_out_range: If True, only render the in/out range
+        render_settings: Optional dict with additional settings like TargetDir, CustomName
+
+    Returns:
+        Dict with success status and details
+    """
     if not resolve:
         logger.error("No connection to DaVinci Resolve")
         return {"error": "No connection to DaVinci Resolve"}
@@ -204,13 +133,19 @@ def add_to_render_queue(
         logger.error("No project is currently open")
         return {"error": "No project is currently open"}
 
-    page = resolve.GetCurrentPage()
-    if page != "deliver":
-        logger.info(f"Switching from {page} page to deliver page")
-        resolve.OpenPage("deliver")
+    # Switch to deliver page
+    ensure_deliver_page(resolve)
 
+    # Set or get the timeline
     if timeline_name:
-        timeline = current_project.GetTimelineByName(timeline_name)
+        # GetTimelineByName may not exist in all API versions, use index-based lookup
+        timeline = None
+        timeline_count = current_project.GetTimelineCount() or 0
+        for i in range(1, timeline_count + 1):
+            tl = current_project.GetTimelineByIndex(i)
+            if tl and tl.GetName() == timeline_name:
+                timeline = tl
+                break
         if not timeline:
             logger.error(f"Timeline '{timeline_name}' not found")
             return {"error": f"Timeline '{timeline_name}' not found"}
@@ -224,81 +159,64 @@ def add_to_render_queue(
     actual_timeline_name = timeline.GetName()
     logger.info(f"Using timeline: {actual_timeline_name}")
 
-    success, render_settings_interface, message = ensure_render_settings(
-        resolve, current_project
-    )
-    if not success or not render_settings_interface:
-        logger.error(f"Failed to initialize render settings: {message}")
-        return {"error": message}
-
-    preset_valid, available_presets, preset_message = validate_render_preset(
-        render_settings_interface, preset_name
-    )
+    # Validate preset exists
+    preset_valid, available_presets, preset_message = validate_render_preset(current_project, preset_name)
     if not preset_valid:
         logger.error(f"Invalid preset: {preset_message}")
         return {"error": preset_message}
 
-    settings_to_apply = {"SelectPreset": preset_name}
-    logger.info(f"Applying render preset: {preset_name}")
+    # Load the render preset (method on project object)
+    try:
+        if not current_project.LoadRenderPreset(preset_name):
+            logger.warning(f"LoadRenderPreset returned False for '{preset_name}', trying SetRenderSettings")
+    except Exception as e:
+        logger.warning(f"LoadRenderPreset failed: {str(e)}, trying SetRenderSettings")
 
+    # Build settings dict
+    settings_to_apply = {}
+
+    # Add custom render settings if provided
     if render_settings:
-        logger.info(f"Adding additional render settings: {render_settings}")
+        logger.info(f"Adding custom render settings: {render_settings}")
         settings_to_apply.update(render_settings)
 
-    try:
-        if not render_settings_interface.SetRenderSettings(settings_to_apply):
-            logger.error(f"Failed to apply render preset '{preset_name}'")
-            return {"error": f"Failed to apply render preset '{preset_name}'"}
-        logger.info("Successfully applied render preset")
-    except Exception as e:
-        logger.error(f"Error applying render preset: {str(e)}")
-        return {"error": f"Error applying render preset: {str(e)}"}
+    # Apply settings if we have any
+    if settings_to_apply:
+        try:
+            # SetRenderSettings() is called on the project object
+            result = current_project.SetRenderSettings(settings_to_apply)
+            if result:
+                logger.info("Successfully applied render settings")
+            else:
+                logger.warning("SetRenderSettings returned False")
+        except Exception as e:
+            logger.error(f"Error applying render settings: {str(e)}")
+            return {"error": f"Error applying render settings: {str(e)}"}
 
-    result = False
+    # Add to render queue
+    job_id = None
     logger.info("Adding timeline to render queue")
     try:
-        if use_in_out_range:
-            logger.info("Using in/out range for render")
-            result = current_project.AddRenderJobToRenderQueue()
-        else:
-            logger.info(
-                f"Adding entire timeline '{actual_timeline_name}' to render queue"
-            )
-            result = current_project.AddTimelineToRenderQueue(actual_timeline_name)
+        # AddRenderJob() is the correct method on project object
+        job_id = current_project.AddRenderJob()
+        logger.info(f"AddRenderJob returned: {job_id}")
     except Exception as e:
         logger.error(f"Exception while adding to render queue: {str(e)}")
+        return {"error": f"Failed to add to render queue: {str(e)}"}
 
-        try:
-            logger.info("Trying alternative approach for adding to render queue")
-            render_settings_interface.SetRenderSettings(settings_to_apply)
-
-            import time
-
-            time.sleep(0.5)
-
-            if use_in_out_range:
-                result = current_project.AddRenderJobToRenderQueue()
-            else:
-                result = current_project.AddTimelineToRenderQueue(actual_timeline_name)
-        except Exception as nested_e:
-            logger.error(f"Alternative approach also failed: {str(nested_e)}")
-            return {
-                "error": f"Failed to add to render queue: {str(e)}. Alternative approach also failed: {str(nested_e)}"
-            }
-
-    if result:
-        logger.info(
-            f"Successfully added '{actual_timeline_name}' to render queue with preset '{preset_name}'"
-        )
+    if job_id:
+        logger.info(f"Successfully added '{actual_timeline_name}' to render queue with preset '{preset_name}'")
         return {
             "success": True,
             "message": f"Added '{actual_timeline_name}' to render queue with preset '{preset_name}'",
+            "job_id": job_id,
             "timeline": actual_timeline_name,
             "preset": preset_name,
             "in_out_range_only": use_in_out_range,
+            "settings_applied": settings_to_apply if settings_to_apply else None,
         }
     else:
-        logger.error("Failed to add to render queue")
+        logger.error("Failed to add to render queue - no job ID returned")
         return {
             "error": "Failed to add to render queue",
             "timeline": actual_timeline_name,

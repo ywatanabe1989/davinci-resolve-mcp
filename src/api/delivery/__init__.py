@@ -7,7 +7,7 @@ Re-exports all functions from submodules for backward compatibility.
 from .render import (
     get_render_presets,
     add_to_render_queue,
-    ensure_render_settings,
+    ensure_deliver_page,
     validate_render_preset,
 )
 
@@ -21,7 +21,7 @@ __all__ = [
     # Render operations
     "get_render_presets",
     "add_to_render_queue",
-    "ensure_render_settings",
+    "ensure_deliver_page",
     "validate_render_preset",
     # Queue operations
     "start_render",
