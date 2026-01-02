@@ -32,7 +32,9 @@ def check_setup():
     """Check if the environment is properly set up."""
     env_status = check_environment_variables()
     if not env_status["all_set"]:
-        logger.warning(f"Setting default environment variables. Missing: {env_status['missing']}")
+        logger.warning(
+            f"Setting default environment variables. Missing: {env_status['missing']}"
+        )
         set_default_environment_variables()
 
     return True
@@ -52,7 +54,9 @@ def run_server(debug=False):
         from src.tools.register_tools import register_all_new_tools
 
         register_all_new_tools(mcp, resolve)
-        logger.info("Registered new modular tools (database, media storage, gallery, timeline, markers, capture)")
+        logger.info(
+            "Registered new modular tools (database, media storage, gallery, timeline, markers, capture)"
+        )
     except ImportError as e:
         logger.warning(f"Could not load modular tools: {e}")
     except Exception as e:
@@ -72,7 +76,9 @@ def main():
     if check_setup():
         run_server(debug=args.debug)
     else:
-        logger.error("Failed to set up the environment. Please check the configuration.")
+        logger.error(
+            "Failed to set up the environment. Please check the configuration."
+        )
         return 1
 
     return 0
