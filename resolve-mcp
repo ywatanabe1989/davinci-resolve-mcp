@@ -53,6 +53,7 @@ USAGE:
 OPTIONS:
     --help      Show this help message
     --check     Check if DaVinci Resolve is running
+    --test      Test the setup without starting server
     --verbose   Show detailed output
 
 PLATFORMS:
@@ -111,8 +112,51 @@ run_macos() {
     fi
 }
 
+test_wsl_setup() {
+    log_info "Testing WSL setup..."
+
+    # Check PowerShell
+    if ! command -v powershell.exe &> /dev/null; then
+        log_error "powershell.exe not found in PATH"
+        return 1
+    fi
+    log_info "✓ PowerShell available"
+
+    # Check Resolve running
+    if powershell.exe -NoProfile -Command "Get-Process -Name 'Resolve' -ErrorAction SilentlyContinue" 2>/dev/null | grep -q "Resolve"; then
+        log_info "✓ DaVinci Resolve is running"
+    else
+        log_error "✗ DaVinci Resolve is NOT running"
+        log_info "  Start DaVinci Resolve on Windows first"
+        return 1
+    fi
+
+    # Check if project has Windows venv
+    local win_venv="$SCRIPT_DIR/.venv_win"
+    if [ -d "$win_venv" ]; then
+        log_info "✓ Windows venv found at .venv_win/"
+    else
+        log_warn "✗ No Windows venv at .venv_win/"
+        log_info "  For WSL, you need Python installed on Windows:"
+        log_info "  1. Open PowerShell"
+        log_info "  2. cd to this project (via /mnt/c/... path)"
+        log_info "  3. python -m venv .venv_win"
+        log_info "  4. .venv_win\\Scripts\\pip install -r requirements.txt"
+    fi
+
+    log_info ""
+    log_info "WSL bridges to Windows Python to access DaVinci Resolve API."
+    log_info "The MCP server runs in stdio mode (waits for JSON-RPC input)."
+    log_info ""
+    log_info "To use with Claude Code, add to ~/.claude.json:"
+    log_info "  {\"mcpServers\": {\"davinci-resolve\": {"
+    log_info "    \"command\": \"$SCRIPT_DIR/resolve-mcp\","
+    log_info "    \"args\": []}}}"
+}
+
 run_wsl() {
     log_info "Running on WSL (bridging to Windows)"
+    log_info "Starting MCP server (stdio mode - will wait for client)..."
 
     # Use the Python entry point for WSL
     exec python3 "$SCRIPT_DIR/scripts/linux/mcp_entry.py" "$@"
@@ -152,6 +196,20 @@ main() {
                 log_error "DaVinci Resolve is not running"
                 exit 1
             fi
+            ;;
+        --test)
+            PLATFORM=$(detect_platform)
+            log_info "Detected platform: $PLATFORM"
+            case "$PLATFORM" in
+                wsl)
+                    test_wsl_setup
+                    ;;
+                *)
+                    log_info "Test mode only implemented for WSL currently"
+                    check_resolve_running "$PLATFORM" && log_info "✓ DaVinci Resolve is running" || log_error "✗ DaVinci Resolve is NOT running"
+                    ;;
+            esac
+            exit 0
             ;;
         --verbose|-v)
             export VERBOSE=1
