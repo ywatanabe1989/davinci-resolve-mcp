@@ -15,6 +15,94 @@ import subprocess
 import platform
 from pathlib import Path
 
+# Required packages for MCP server
+REQUIRED_PACKAGES = ["mcp"]
+
+
+def check_windows_python_exists() -> tuple[bool, str]:
+    """Check if Windows Python is available."""
+    try:
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", "python --version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            return True, result.stdout.strip()
+        return False, "Python not found"
+    except Exception as e:
+        return False, str(e)
+
+
+def check_windows_package(python_path: str, package: str) -> bool:
+    """Check if a package is installed in Windows Python."""
+    try:
+        result = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-Command",
+                f"& '{python_path}' -c \"import {package}\"",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def check_dependencies(python_path: str) -> tuple[bool, list[str]]:
+    """Check if all required packages are installed.
+
+    Returns:
+        tuple: (all_ok, list of missing packages)
+    """
+    missing = []
+    for pkg in REQUIRED_PACKAGES:
+        if not check_windows_package(python_path, pkg):
+            missing.append(pkg)
+    return len(missing) == 0, missing
+
+
+def get_wsl_unc_path() -> str:
+    """Get the UNC path to access WSL from Windows."""
+    # Get distro name
+    try:
+        with open("/etc/os-release") as f:
+            for line in f:
+                if line.startswith("ID="):
+                    distro = line.strip().split("=")[1].strip('"')
+                    # Capitalize first letter for Windows UNC path
+                    distro = distro.capitalize()
+                    break
+            else:
+                distro = "Ubuntu"  # Default
+    except Exception:
+        distro = "Ubuntu"
+
+    project_root = get_project_root()
+    # Convert /home/user/path to \\wsl$\Distro\home\user\path
+    win_path = str(project_root).replace("/", "\\")
+    return f"\\\\wsl$\\{distro}{win_path}"
+
+
+def print_dependency_error(python_path: str, missing_packages: list[str]):
+    """Print error message for missing dependencies."""
+    print("\n[MCP] ERROR: Missing required Python packages on Windows!", file=sys.stderr)
+    print(f"[MCP] Python: {python_path}", file=sys.stderr)
+    print(f"[MCP] Missing: {', '.join(missing_packages)}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("[MCP] To fix, run in PowerShell:", file=sys.stderr)
+    print(f"  {python_path} -m pip install {' '.join(missing_packages)}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("[MCP] Or install all requirements:", file=sys.stderr)
+    win_project = get_wsl_unc_path()
+    print(f'  {python_path} -m pip install -r "{win_project}\\requirements.txt"', file=sys.stderr)
+    print("", file=sys.stderr)
+
 
 def is_wsl() -> bool:
     """Detect if running in WSL."""
@@ -175,6 +263,14 @@ def run_via_wsl(verbose: bool = False) -> int:
     # Load config from .env
     config = load_env_config()
     paths = get_windows_paths(config, verbose)
+
+    # Check dependencies before proceeding
+    print("[MCP] Checking dependencies...", file=sys.stderr)
+    deps_ok, missing = check_dependencies(paths["python"])
+    if not deps_ok:
+        print_dependency_error(paths["python"], missing)
+        return 1
+    print("[MCP] Dependencies OK", file=sys.stderr)
 
     # Check if Resolve is running
     if not check_resolve_running(verbose):
