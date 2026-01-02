@@ -120,7 +120,15 @@ class TestCoreTools:
 
         register_core_tools(mcp, resolve, logger)
 
-        valid_pages = ["media", "cut", "edit", "fusion", "color", "fairlight", "deliver"]
+        valid_pages = [
+            "media",
+            "cut",
+            "edit",
+            "fusion",
+            "color",
+            "fairlight",
+            "deliver",
+        ]
         for page in valid_pages:
             result = registered_tools["switch_page"](page)
             assert "Successfully" in result or "switched" in result.lower()

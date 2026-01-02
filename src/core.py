@@ -62,7 +62,9 @@ try:
     if resolve:
         logger.info("Successfully connected to DaVinci Resolve")
     else:
-        logger.warning("DaVinci Resolve is not running or the scripting API is unavailable")
+        logger.warning(
+            "DaVinci Resolve is not running or the scripting API is unavailable"
+        )
 except ImportError as e:
     logger.error(f"Failed to import DaVinciResolveScript: {e}")
 except Exception as e:
