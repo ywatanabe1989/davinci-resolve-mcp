@@ -30,7 +30,7 @@ pip install -r requirements.txt
   "mcpServers": {
     "davinci-resolve": {
       "command": "/full/path/to/davinci-resolve-mcp/resolve-mcp",
-      "args": []
+      "timeout": 120000
     }
   }
 }
@@ -42,11 +42,13 @@ pip install -r requirements.txt
   "mcpServers": {
     "davinci-resolve": {
       "command": "/full/path/to/davinci-resolve-mcp/resolve-mcp",
-      "args": []
+      "timeout": 120000
     }
   }
 }
 ```
+
+> **Note**: The `timeout` (in milliseconds) is recommended, especially for WSL where startup takes longer.
 
 ### 4. Run
 
@@ -116,6 +118,13 @@ Ask your AI assistant things like:
 
 ```bash
 ./resolve-mcp --verbose
+```
+
+### WSL debugging
+
+Check the log file for WSL-specific issues:
+```bash
+cat logs/mcp_entry.log
 ```
 
 ---

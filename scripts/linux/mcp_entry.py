@@ -14,6 +14,22 @@ import sys
 import subprocess
 import platform
 from pathlib import Path
+from datetime import datetime
+
+# Log file for debugging (doesn't interfere with MCP stdio)
+LOG_FILE = Path(__file__).parent.parent.parent / "logs" / "mcp_entry.log"
+
+
+def log(msg: str, level: str = "INFO"):
+    """Write to log file for debugging."""
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(LOG_FILE, "a") as f:
+            f.write(f"[{timestamp}] [{level}] {msg}\n")
+    except Exception:
+        pass  # Silently ignore logging errors
+
 
 # Required packages for MCP server
 REQUIRED_PACKAGES = ["mcp"]
@@ -24,6 +40,7 @@ def check_windows_python_exists() -> tuple[bool, str]:
     try:
         result = subprocess.run(
             ["powershell.exe", "-NoProfile", "-Command", "python --version"],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             timeout=10,
@@ -45,6 +62,7 @@ def check_windows_package(python_path: str, package: str) -> bool:
                 "-Command",
                 f"& '{python_path}' -c \"import {package}\"",
             ],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             timeout=10,
@@ -147,11 +165,31 @@ def win_to_wsl_path(win_path: str) -> str:
 
 
 def wsl_to_win_path(wsl_path: str) -> str:
-    """Convert WSL path to Windows path. /mnt/c/foo -> C:\\foo"""
+    """Convert WSL path to Windows-accessible path.
+
+    /mnt/c/foo -> C:\\foo
+    /home/user/foo -> \\\\wsl.localhost\\Ubuntu\\home\\user\\foo
+    """
     if wsl_path.startswith("/mnt/") and len(wsl_path) > 6:
         drive = wsl_path[5].upper()
         rest = wsl_path[6:].replace("/", "\\")
         return f"{drive}:{rest}"
+    # For WSL native paths, use UNC path
+    if wsl_path.startswith("/"):
+        # Get distro name
+        try:
+            with open("/etc/os-release") as f:
+                for line in f:
+                    if line.startswith("ID="):
+                        distro = line.strip().split("=")[1].strip('"')
+                        distro = distro.capitalize()
+                        break
+                else:
+                    distro = "Ubuntu"
+        except Exception:
+            distro = "Ubuntu"
+        win_path = wsl_path.replace("/", "\\")
+        return f"\\\\wsl.localhost\\{distro}{win_path}"
     return wsl_path
 
 
@@ -230,6 +268,7 @@ def check_resolve_running(verbose: bool = False) -> bool:
                 "-Command",
                 "Get-Process -Name 'Resolve' -ErrorAction SilentlyContinue",
             ],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             timeout=5,
@@ -251,12 +290,16 @@ def run_via_wsl(verbose: bool = False) -> int:
     """
     import time
 
+    log("=== Starting MCP Entry Point ===")
+    log(f"Verbose mode: {verbose}")
+
     # Always show status to stderr (doesn't interfere with MCP stdio protocol)
     print("[MCP] Initializing WSL bridge to Windows...", file=sys.stderr)
 
     # Load config from .env
     config = load_env_config()
     paths = get_windows_paths(config, verbose)
+    log(f"Windows paths: project={paths['project']}")
 
     # Check dependencies before proceeding
     print("[MCP] Checking dependencies...", file=sys.stderr)
@@ -276,6 +319,7 @@ def run_via_wsl(verbose: bool = False) -> int:
                 "-Command",
                 f"Start-Process '{paths['resolve_exe']}'",
             ],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
         )
         # Wait for Resolve to start
@@ -314,6 +358,9 @@ Set-Location '{paths["project"]}'
     if verbose:
         print("Using inline PowerShell with ProcessStartInfo", file=sys.stderr)
 
+    log("Starting subprocess.Popen for PowerShell")
+    log(f"stdin={sys.stdin}, stdout={sys.stdout}")
+
     # Run PowerShell with the inline script
     process = subprocess.Popen(
         ["powershell.exe", "-NoProfile", "-NoLogo", "-Command", ps_script],
@@ -322,7 +369,10 @@ Set-Location '{paths["project"]}'
         stderr=sys.stderr if verbose else subprocess.DEVNULL,
     )
 
-    return process.wait()
+    log(f"PowerShell process started with PID: {process.pid}")
+    result = process.wait()
+    log(f"PowerShell process exited with code: {result}")
+    return result
 
 
 def run_native(verbose: bool = False) -> int:
