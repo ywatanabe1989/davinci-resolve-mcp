@@ -179,16 +179,10 @@ def find_windows_python(project_dir: str, verbose: bool = False) -> tuple[str, s
 
 
 def print_venv_setup_instructions(project_dir: str):
-    """Print instructions for setting up Windows venv from WSL."""
-    print("\n[MCP] No Windows Python venv found.", file=sys.stderr)
-    print("[MCP] For best results, create a Windows venv:", file=sys.stderr)
-    print("", file=sys.stderr)
-    print("  # In PowerShell (as Administrator):", file=sys.stderr)
-    print(f'  cd "{project_dir}"', file=sys.stderr)
-    print("  python -m venv .venv_win", file=sys.stderr)
-    print("  .\\.venv_win\\Scripts\\pip install -r requirements.txt", file=sys.stderr)
-    print("", file=sys.stderr)
-    print("[MCP] Falling back to system Python...", file=sys.stderr)
+    """Print instructions - venv doesn't work on UNC paths, use system Python."""
+    # Note: venv on UNC paths (\\wsl.localhost\...) creates broken launchers
+    # So we just inform the user we're using system Python
+    print("[MCP] Using Windows system Python (venv not supported on UNC paths)", file=sys.stderr)
 
 
 def get_windows_paths(config: dict, verbose: bool = False) -> dict:
@@ -307,79 +301,14 @@ def run_via_wsl(verbose: bool = False) -> int:
         print(f"[MCP] Project: {paths['project']}", file=sys.stderr)
         print(f"[MCP] Script: {paths['script']}", file=sys.stderr)
 
-    # Build inline PowerShell script for proper stdio handling
-    # Uses synchronous reads with threading for continuous bidirectional IO
+    # Build PowerShell command to run Python MCP server
+    # Use Start-Process with -Wait for simpler handling
     ps_script = f"""
 $env:PYTHONPATH = '{paths["project"]}'
 $env:RESOLVE_SCRIPT_API = '{paths["api"]}'
 $env:RESOLVE_SCRIPT_LIB = '{paths["lib"]}'
-
-$pinfo = New-Object System.Diagnostics.ProcessStartInfo
-$pinfo.FileName = '{paths["python"]}'
-$pinfo.Arguments = '"{paths["script"]}"'
-$pinfo.RedirectStandardInput = $true
-$pinfo.RedirectStandardOutput = $true
-$pinfo.RedirectStandardError = $true
-$pinfo.UseShellExecute = $false
-$pinfo.CreateNoWindow = $true
-
-$p = New-Object System.Diagnostics.Process
-$p.StartInfo = $pinfo
-$p.Start() | Out-Null
-
-# Background runspace to read stdout and print it
-$stdoutRunspace = [runspacefactory]::CreateRunspace()
-$stdoutRunspace.Open()
-$stdoutPS = [powershell]::Create()
-$stdoutPS.Runspace = $stdoutRunspace
-$stdoutPS.AddScript({{
-    param($reader)
-    while ($true) {{
-        $line = $reader.ReadLine()
-        if ($null -eq $line) {{ break }}
-        [Console]::Out.WriteLine($line)
-        [Console]::Out.Flush()
-    }}
-}}).AddArgument($p.StandardOutput) | Out-Null
-$stdoutHandle = $stdoutPS.BeginInvoke()
-
-# Background runspace for stderr
-$stderrRunspace = [runspacefactory]::CreateRunspace()
-$stderrRunspace.Open()
-$stderrPS = [powershell]::Create()
-$stderrPS.Runspace = $stderrRunspace
-$stderrPS.AddScript({{
-    param($reader)
-    while ($true) {{
-        $line = $reader.ReadLine()
-        if ($null -eq $line) {{ break }}
-        [Console]::Error.WriteLine($line)
-    }}
-}}).AddArgument($p.StandardError) | Out-Null
-$stderrHandle = $stderrPS.BeginInvoke()
-
-# Main thread: forward stdin
-while (-not $p.HasExited) {{
-    $line = [Console]::In.ReadLine()
-    if ($null -eq $line) {{ break }}
-    try {{
-        $p.StandardInput.WriteLine($line)
-        $p.StandardInput.Flush()
-    }} catch {{ break }}
-}}
-
-try {{ $p.StandardInput.Close() }} catch {{}}
-$p.WaitForExit(30000)
-
-# Cleanup
-try {{
-    $stdoutPS.Stop()
-    $stderrPS.Stop()
-    $stdoutRunspace.Close()
-    $stderrRunspace.Close()
-}} catch {{}}
-
-exit $p.ExitCode
+Set-Location '{paths["project"]}'
+& python -m src
 """
 
     if verbose:
@@ -387,7 +316,7 @@ exit $p.ExitCode
 
     # Run PowerShell with the inline script
     process = subprocess.Popen(
-        ["powershell.exe", "-NoProfile", "-Command", ps_script],
+        ["powershell.exe", "-NoProfile", "-NoLogo", "-Command", ps_script],
         stdin=sys.stdin,
         stdout=sys.stdout,
         stderr=sys.stderr if verbose else subprocess.DEVNULL,
