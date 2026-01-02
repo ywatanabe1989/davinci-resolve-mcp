@@ -13,11 +13,11 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 VENV_DIR="$SCRIPT_DIR/venv"
 CURSOR_CONFIG_FILE="$HOME/.cursor/mcp.json"
-RESOLVE_MCP_SERVER="$SCRIPT_DIR/resolve_mcp_server.py"
+RESOLVE_MCP_SERVER="$SCRIPT_DIR/src/__main__.py"
 
 # Required files and their permissions
 REQUIRED_FILES=(
-    "$SCRIPT_DIR/resolve_mcp_server.py:755"
+    "$SCRIPT_DIR/src/__main__.py:755"
     "$SCRIPT_DIR/run-now.sh:755"
     "$SCRIPT_DIR/setup.sh:755"
 )
@@ -128,9 +128,9 @@ else
     echo -e "${RED}✗ Some required files are missing${NC}"
     echo -e "${YELLOW}Attempting to retrieve or recreate missing files...${NC}"
     
-    # Check if resolve_mcp_server.py is missing and create a basic version if needed
+    # Check if src/__main__.py is missing and create a basic version if needed
     if [ ! -f "$RESOLVE_MCP_SERVER" ]; then
-        echo -e "${YELLOW}Creating basic resolve_mcp_server.py...${NC}"
+        echo -e "${YELLOW}Creating basic src/__main__.py...${NC}"
         cat > "$RESOLVE_MCP_SERVER" << 'EOF'
 #!/usr/bin/env python3
 """
@@ -248,7 +248,7 @@ if __name__ == "__main__":
         sys.exit(1)
 EOF
         chmod 755 "$RESOLVE_MCP_SERVER"
-        echo -e "${GREEN}✓ Created basic resolve_mcp_server.py${NC}"
+        echo -e "${GREEN}✓ Created basic src/__main__.py${NC}"
     fi
     
     # Check if run-now.sh is missing and create if needed
@@ -291,14 +291,14 @@ else
 fi
 
 # Make the server script executable
-chmod +x "$SCRIPT_DIR/resolve_mcp_server.py"
+chmod +x "$SCRIPT_DIR/src/__main__.py"
 
 # Run the server with the virtual environment's Python
 echo -e "${GREEN}Starting DaVinci Resolve MCP Server...${NC}"
 echo -e "${YELLOW}Make sure DaVinci Resolve is running!${NC}"
 echo ""
 
-"$VENV_DIR/bin/mcp" dev "$SCRIPT_DIR/resolve_mcp_server.py"
+"$VENV_DIR/bin/mcp" dev "$SCRIPT_DIR/src/__main__.py"
 EOF
         chmod 755 "$SCRIPT_DIR/run-now.sh"
         echo -e "${GREEN}✓ Created run-now.sh script${NC}"
@@ -387,7 +387,7 @@ cat > "$CURSOR_MCP_CONFIG" << EOF
     "davinci-resolve": {
       "name": "DaVinci Resolve MCP",
       "command": "$VENV_DIR/bin/python",
-      "args": ["$SCRIPT_DIR/../src/main.py"]
+      "args": ["$SCRIPT_DIR/../src/__main__.py"]
     }
   }
 }
@@ -395,7 +395,7 @@ EOF
 echo -e "${GREEN}Cursor MCP configuration created at $CURSOR_MCP_CONFIG${NC}"
 
 # Make scripts executable
-chmod +x "$SCRIPT_DIR/resolve_mcp_server.py"
+chmod +x "$SCRIPT_DIR/src/__main__.py"
 chmod +x "$SCRIPT_DIR/run-now.sh"
 chmod +x "$SCRIPT_DIR/check-resolve-ready.sh"
 
@@ -509,7 +509,7 @@ elif [ "$cursor_status" -eq 1 ]; then
     "davinci-resolve": {
       "name": "DaVinci Resolve MCP",
       "command": "$VENV_DIR/bin/python",
-      "args": ["$SCRIPT_DIR/../src/main.py"]
+      "args": ["$SCRIPT_DIR/../src/__main__.py"]
     }
   }
 }
@@ -526,7 +526,7 @@ else
     # A more robust approach would use jq if available
     if grep -q "\"mcpServers\"" "$CURSOR_CONFIG_FILE"; then
         # mcpServers already exists, try to add our server
-        sed -i '' -e 's/"mcpServers": {/"mcpServers": {\n    "davinci-resolve": {\n      "name": "DaVinci Resolve MCP",\n      "command": "'"$VENV_DIR\/bin\/python"'",\n      "args": ["'"$SCRIPT_DIR/../src/main.py"'"]\n    },/g' "$CURSOR_CONFIG_FILE"
+        sed -i '' -e 's/"mcpServers": {/"mcpServers": {\n    "davinci-resolve": {\n      "name": "DaVinci Resolve MCP",\n      "command": "'"$VENV_DIR\/bin\/python"'",\n      "args": ["'"$SCRIPT_DIR/../src/__main__.py"'"]\n    },/g' "$CURSOR_CONFIG_FILE"
     else
         # No mcpServers exists, create everything
         cat > "$CURSOR_CONFIG_FILE" << EOF
@@ -535,7 +535,7 @@ else
     "davinci-resolve": {
       "name": "DaVinci Resolve MCP",
       "command": "$VENV_DIR/bin/python",
-      "args": ["$SCRIPT_DIR/../src/main.py"]
+      "args": ["$SCRIPT_DIR/../src/__main__.py"]
     }
   }
 }

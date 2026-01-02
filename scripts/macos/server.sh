@@ -74,7 +74,7 @@ start_server() {
     mkdir -p "$PROJECT_ROOT/logs"
     
     # Use direct Python as it's more reliable in background mode
-    nohup python3 "$PROJECT_ROOT/resolve_mcp_server.py" > "$PROJECT_ROOT/logs/server.log" 2>&1 &
+    nohup python3 "$PROJECT_ROOT/src/__main__.py" > "$PROJECT_ROOT/logs/server.log" 2>&1 &
     
     # Give the server time to start
     echo "Waiting for server to initialize..."
@@ -129,7 +129,7 @@ start_dev_mode() {
     activate_venv
     
     echo "🚀 Starting DaVinci Resolve MCP Server in development mode..."
-    python3 "$PROJECT_ROOT/resolve_mcp_server.py"
+    python3 "$PROJECT_ROOT/src/__main__.py"
 }
 
 # Show server status

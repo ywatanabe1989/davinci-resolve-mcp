@@ -102,7 +102,7 @@ setup_cursor_config() {
     "davinci-resolve": {
       "name": "DaVinci Resolve MCP",
       "command": "${VENV_DIR}/bin/python",
-      "args": ["${PROJECT_ROOT}/resolve_mcp_server.py"]
+      "args": ["${PROJECT_ROOT}/src/__main__.py"]
     }
   }
 }
@@ -122,7 +122,7 @@ EOF
     "davinci-resolve": {
       "name": "DaVinci Resolve MCP",
       "command": "${VENV_DIR}/bin/python",
-      "args": ["${PROJECT_ROOT}/resolve_mcp_server.py"]
+      "args": ["${PROJECT_ROOT}/src/__main__.py"]
     }
   }
 }
@@ -130,7 +130,7 @@ EOF
     
     echo -e "${GREEN}✓ Cursor MCP config created at: $CURSOR_CONFIG_FILE${NC}"
     echo -e "${GREEN}✓ Project-level MCP config created at: $PROJECT_CONFIG_FILE${NC}"
-    echo -e "${GREEN}✓ MCP config points to: ${PROJECT_ROOT}/resolve_mcp_server.py${NC}"
+    echo -e "${GREEN}✓ MCP config points to: ${PROJECT_ROOT}/src/__main__.py${NC}"
     return 0
 }
 
@@ -179,7 +179,7 @@ main() {
     fi
     
     # Make scripts executable
-    chmod +x "$PROJECT_ROOT/resolve_mcp_server.py"
+    chmod +x "$PROJECT_ROOT/src/__main__.py"
     
     # Start the server
     echo -e "${GREEN}Starting MCP server...${NC}"
@@ -188,9 +188,9 @@ main() {
     # Run the server with the virtual environment's Python
     if [ -n "$PROJECT_NAME" ]; then
         echo -e "${YELLOW}Opening project: $PROJECT_NAME${NC}"
-        "$VENV_DIR/bin/python" "$PROJECT_ROOT/resolve_mcp_server.py" --project "$PROJECT_NAME"
+        "$VENV_DIR/bin/python" "$PROJECT_ROOT/src/__main__.py" --project "$PROJECT_NAME"
     else
-        "$VENV_DIR/bin/python" "$PROJECT_ROOT/resolve_mcp_server.py"
+        "$VENV_DIR/bin/python" "$PROJECT_ROOT/src/__main__.py"
     fi
     
     # Server shouldn't reach this point unless it crashed

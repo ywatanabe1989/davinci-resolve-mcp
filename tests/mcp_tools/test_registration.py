@@ -1,106 +1,41 @@
 """Tests for MCP tools registration functions."""
 
+import pytest
 from unittest.mock import Mock, MagicMock
+
+
+# Parametrized test for all module imports
+TOOL_MODULES = [
+    ("src.mcp_tools", "register_all_tools"),
+    ("src.mcp_tools.core", "register_core_tools"),
+    ("src.mcp_tools.project", "register_project_tools"),
+    ("src.mcp_tools.timeline", "register_timeline_tools"),
+    ("src.mcp_tools.media", "register_media_tools"),
+    ("src.mcp_tools.color", "register_color_tools"),
+    ("src.mcp_tools.delivery", "register_delivery_tools"),
+    ("src.mcp_tools.cache", "register_cache_tools"),
+    ("src.mcp_tools.keyframes", "register_keyframe_tools"),
+    ("src.mcp_tools.presets", "register_preset_tools"),
+    ("src.mcp_tools.inspection", "register_inspection_tools"),
+    ("src.mcp_tools.layout", "register_layout_tools"),
+    ("src.mcp_tools.app", "register_app_tools"),
+    ("src.mcp_tools.cloud", "register_cloud_tools"),
+    ("src.mcp_tools.properties", "register_property_tools"),
+    ("src.mcp_tools.timeline_items", "register_timeline_item_tools"),
+]
 
 
 class TestModuleImports:
     """Tests that all MCP tool modules can be imported."""
 
-    def test_import_mcp_tools_init(self):
-        """Should import mcp_tools package."""
-        from src.mcp_tools import register_all_tools
+    @pytest.mark.parametrize("module_path,func_name", TOOL_MODULES)
+    def test_module_imports_and_is_callable(self, module_path, func_name):
+        """Should import module and verify function is callable."""
+        import importlib
 
-        assert callable(register_all_tools)
-
-    def test_import_core_tools(self):
-        """Should import core tools module."""
-        from src.mcp_tools.core import register_core_tools
-
-        assert callable(register_core_tools)
-
-    def test_import_project_tools(self):
-        """Should import project tools module."""
-        from src.mcp_tools.project import register_project_tools
-
-        assert callable(register_project_tools)
-
-    def test_import_timeline_tools(self):
-        """Should import timeline tools module."""
-        from src.mcp_tools.timeline import register_timeline_tools
-
-        assert callable(register_timeline_tools)
-
-    def test_import_media_tools(self):
-        """Should import media tools module."""
-        from src.mcp_tools.media import register_media_tools
-
-        assert callable(register_media_tools)
-
-    def test_import_color_tools(self):
-        """Should import color tools module."""
-        from src.mcp_tools.color import register_color_tools
-
-        assert callable(register_color_tools)
-
-    def test_import_delivery_tools(self):
-        """Should import delivery tools module."""
-        from src.mcp_tools.delivery import register_delivery_tools
-
-        assert callable(register_delivery_tools)
-
-    def test_import_cache_tools(self):
-        """Should import cache tools module."""
-        from src.mcp_tools.cache import register_cache_tools
-
-        assert callable(register_cache_tools)
-
-    def test_import_keyframe_tools(self):
-        """Should import keyframe tools module."""
-        from src.mcp_tools.keyframes import register_keyframe_tools
-
-        assert callable(register_keyframe_tools)
-
-    def test_import_preset_tools(self):
-        """Should import preset tools module."""
-        from src.mcp_tools.presets import register_preset_tools
-
-        assert callable(register_preset_tools)
-
-    def test_import_inspection_tools(self):
-        """Should import inspection tools module."""
-        from src.mcp_tools.inspection import register_inspection_tools
-
-        assert callable(register_inspection_tools)
-
-    def test_import_layout_tools(self):
-        """Should import layout tools module."""
-        from src.mcp_tools.layout import register_layout_tools
-
-        assert callable(register_layout_tools)
-
-    def test_import_app_tools(self):
-        """Should import app tools module."""
-        from src.mcp_tools.app import register_app_tools
-
-        assert callable(register_app_tools)
-
-    def test_import_cloud_tools(self):
-        """Should import cloud tools module."""
-        from src.mcp_tools.cloud import register_cloud_tools
-
-        assert callable(register_cloud_tools)
-
-    def test_import_property_tools(self):
-        """Should import property tools module."""
-        from src.mcp_tools.properties import register_property_tools
-
-        assert callable(register_property_tools)
-
-    def test_import_timeline_item_tools(self):
-        """Should import timeline item tools module."""
-        from src.mcp_tools.timeline_items import register_timeline_item_tools
-
-        assert callable(register_timeline_item_tools)
+        module = importlib.import_module(module_path)
+        func = getattr(module, func_name)
+        assert callable(func)
 
 
 class TestRegisterAllTools:
@@ -114,250 +49,473 @@ class TestRegisterAllTools:
         resolve = Mock()
         logger = Mock()
 
-        # Should not raise any exceptions
         register_all_tools(mcp, resolve, logger)
 
-        # Verify logger was called for each module
+        # Should log for each module (15 modules)
         assert logger.info.call_count >= 15
 
+    def test_mcp_decorators_are_called(self):
+        """Should use mcp.tool and mcp.resource decorators."""
+        from src.mcp_tools import register_all_tools
 
-class TestCoreToolsRegistration:
-    """Tests for core tools registration."""
+        mcp = MagicMock()
+        resolve = Mock()
+        logger = Mock()
 
-    def test_registers_without_error(self):
-        """Should register core tools without error."""
+        register_all_tools(mcp, resolve, logger)
+
+        # Verify decorators were called
+        assert mcp.tool.called or mcp.resource.called
+
+
+class TestCoreTools:
+    """Tests for core tools functionality."""
+
+    def test_switch_page_rejects_invalid_page(self):
+        """Should return error for invalid page name."""
         from src.mcp_tools.core import register_core_tools
 
         mcp = MagicMock()
         resolve = Mock()
         logger = Mock()
 
+        # Capture the registered tool
+        registered_tools = {}
+
+        def capture_tool():
+            def decorator(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return decorator
+
+        mcp.tool = capture_tool
+
         register_core_tools(mcp, resolve, logger)
 
-        # Verify decorators were called
-        assert mcp.resource.called or mcp.tool.called
-        logger.info.assert_called()
+        # Call the switch_page tool with invalid page
+        result = registered_tools["switch_page"]("invalid_page")
+        assert "Error" in result
+        assert "Invalid page name" in result
+
+    def test_switch_page_accepts_valid_pages(self):
+        """Should accept all valid page names."""
+        from src.mcp_tools.core import register_core_tools
+
+        mcp = MagicMock()
+        resolve = Mock()
+        resolve.OpenPage.return_value = True
+        logger = Mock()
+
+        registered_tools = {}
+
+        def capture_tool():
+            def decorator(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return decorator
+
+        mcp.tool = capture_tool
+
+        register_core_tools(mcp, resolve, logger)
+
+        valid_pages = ["media", "cut", "edit", "fusion", "color", "fairlight", "deliver"]
+        for page in valid_pages:
+            result = registered_tools["switch_page"](page)
+            assert "Successfully" in result or "switched" in result.lower()
+
+    def test_switch_page_returns_error_when_not_connected(self):
+        """Should return error when resolve is None."""
+        from src.mcp_tools.core import register_core_tools
+
+        mcp = MagicMock()
+        resolve = None
+        logger = Mock()
+
+        registered_tools = {}
+
+        def capture_tool():
+            def decorator(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return decorator
+
+        mcp.tool = capture_tool
+
+        register_core_tools(mcp, resolve, logger)
+
+        result = registered_tools["switch_page"]("edit")
+        assert "Error" in result
+        assert "Not connected" in result
 
 
-class TestProjectToolsRegistration:
-    """Tests for project tools registration."""
+class TestCoreResources:
+    """Tests for core resource functionality."""
 
-    def test_registers_without_error(self):
-        """Should register project tools without error."""
+    def test_get_version_returns_error_when_not_connected(self):
+        """Should return error when resolve is None."""
+        from src.mcp_tools.core import register_core_tools
+
+        mcp = MagicMock()
+        resolve = None
+        logger = Mock()
+
+        registered_resources = {}
+
+        def capture_resource(uri):
+            def decorator(func):
+                registered_resources[uri] = func
+                return func
+
+            return decorator
+
+        mcp.resource = capture_resource
+
+        register_core_tools(mcp, resolve, logger)
+
+        result = registered_resources["resolve://version"]()
+        assert "Error" in result
+        assert "Not connected" in result
+
+    def test_get_version_returns_product_info(self):
+        """Should return product name and version."""
+        from src.mcp_tools.core import register_core_tools
+
+        mcp = MagicMock()
+        resolve = Mock()
+        resolve.GetProductName.return_value = "DaVinci Resolve"
+        resolve.GetVersionString.return_value = "18.5.1"
+        logger = Mock()
+
+        registered_resources = {}
+
+        def capture_resource(uri):
+            def decorator(func):
+                registered_resources[uri] = func
+                return func
+
+            return decorator
+
+        mcp.resource = capture_resource
+
+        register_core_tools(mcp, resolve, logger)
+
+        result = registered_resources["resolve://version"]()
+        assert "DaVinci Resolve" in result
+        assert "18.5.1" in result
+
+
+class TestProjectTools:
+    """Tests for project tools functionality."""
+
+    def test_open_project_rejects_empty_name(self):
+        """Should return error for empty project name."""
         from src.mcp_tools.project import register_project_tools
 
         mcp = MagicMock()
         resolve = Mock()
         logger = Mock()
 
+        registered_tools = {}
+
+        def capture_tool():
+            def decorator(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return decorator
+
+        mcp.tool = capture_tool
+
         register_project_tools(mcp, resolve, logger)
 
-        logger.info.assert_called()
+        result = registered_tools["open_project"]("")
+        assert "Error" in result
+        assert "empty" in result.lower()
+
+    def test_open_project_rejects_nonexistent_project(self):
+        """Should return error when project doesn't exist."""
+        from src.mcp_tools.project import register_project_tools
+
+        mcp = MagicMock()
+        resolve = Mock()
+        project_manager = Mock()
+        project_manager.GetProjectListInCurrentFolder.return_value = [
+            "Project1",
+            "Project2",
+        ]
+        resolve.GetProjectManager.return_value = project_manager
+        logger = Mock()
+
+        registered_tools = {}
+
+        def capture_tool():
+            def decorator(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return decorator
+
+        mcp.tool = capture_tool
+
+        register_project_tools(mcp, resolve, logger)
+
+        result = registered_tools["open_project"]("NonExistent")
+        assert "Error" in result
+        assert "not found" in result.lower()
+        assert "Project1" in result  # Should list available projects
+
+    def test_create_project_rejects_duplicate_name(self):
+        """Should return error when project already exists."""
+        from src.mcp_tools.project import register_project_tools
+
+        mcp = MagicMock()
+        resolve = Mock()
+        project_manager = Mock()
+        project_manager.GetProjectListInCurrentFolder.return_value = ["ExistingProject"]
+        resolve.GetProjectManager.return_value = project_manager
+        logger = Mock()
+
+        registered_tools = {}
+
+        def capture_tool():
+            def decorator(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return decorator
+
+        mcp.tool = capture_tool
+
+        register_project_tools(mcp, resolve, logger)
+
+        result = registered_tools["create_project"]("ExistingProject")
+        assert "Error" in result
+        assert "already exists" in result
+
+    def test_save_project_returns_error_when_no_project_open(self):
+        """Should return error when no project is open."""
+        from src.mcp_tools.project import register_project_tools
+
+        mcp = MagicMock()
+        resolve = Mock()
+        project_manager = Mock()
+        project_manager.GetCurrentProject.return_value = None
+        resolve.GetProjectManager.return_value = project_manager
+        logger = Mock()
+
+        registered_tools = {}
+
+        def capture_tool():
+            def decorator(func):
+                registered_tools[func.__name__] = func
+                return func
+
+            return decorator
+
+        mcp.tool = capture_tool
+
+        register_project_tools(mcp, resolve, logger)
+
+        result = registered_tools["save_project"]()
+        assert "Error" in result
+        assert "No project" in result
 
 
-class TestTimelineToolsRegistration:
-    """Tests for timeline tools registration."""
+class TestProjectResources:
+    """Tests for project resource functionality."""
 
-    def test_registers_without_error(self):
-        """Should register timeline tools without error."""
-        from src.mcp_tools.timeline import register_timeline_tools
+    def test_list_projects_returns_project_list(self):
+        """Should return list of projects."""
+        from src.mcp_tools.project import register_project_tools
+
+        mcp = MagicMock()
+        resolve = Mock()
+        project_manager = Mock()
+        project_manager.GetProjectListInCurrentFolder.return_value = [
+            "Project1",
+            "Project2",
+            "Project3",
+        ]
+        resolve.GetProjectManager.return_value = project_manager
+        logger = Mock()
+
+        registered_resources = {}
+
+        def capture_resource(uri):
+            def decorator(func):
+                registered_resources[uri] = func
+                return func
+
+            return decorator
+
+        mcp.resource = capture_resource
+
+        register_project_tools(mcp, resolve, logger)
+
+        result = registered_resources["resolve://projects"]()
+        assert isinstance(result, list)
+        assert len(result) == 3
+        assert "Project1" in result
+
+    def test_get_current_project_returns_name(self):
+        """Should return current project name."""
+        from src.mcp_tools.project import register_project_tools
+
+        mcp = MagicMock()
+        resolve = Mock()
+        project_manager = Mock()
+        current_project = Mock()
+        current_project.GetName.return_value = "MyProject"
+        project_manager.GetCurrentProject.return_value = current_project
+        resolve.GetProjectManager.return_value = project_manager
+        logger = Mock()
+
+        registered_resources = {}
+
+        def capture_resource(uri):
+            def decorator(func):
+                registered_resources[uri] = func
+                return func
+
+            return decorator
+
+        mcp.resource = capture_resource
+
+        register_project_tools(mcp, resolve, logger)
+
+        result = registered_resources["resolve://current-project"]()
+        assert result == "MyProject"
+
+
+class TestToolRegistrationModules:
+    """Parametrized tests for all tool registration modules."""
+
+    @pytest.mark.parametrize(
+        "module_path,func_name",
+        [
+            ("src.mcp_tools.core", "register_core_tools"),
+            ("src.mcp_tools.project", "register_project_tools"),
+            ("src.mcp_tools.timeline", "register_timeline_tools"),
+            ("src.mcp_tools.media", "register_media_tools"),
+            ("src.mcp_tools.color", "register_color_tools"),
+            ("src.mcp_tools.delivery", "register_delivery_tools"),
+            ("src.mcp_tools.cache", "register_cache_tools"),
+            ("src.mcp_tools.keyframes", "register_keyframe_tools"),
+            ("src.mcp_tools.presets", "register_preset_tools"),
+            ("src.mcp_tools.inspection", "register_inspection_tools"),
+            ("src.mcp_tools.layout", "register_layout_tools"),
+            ("src.mcp_tools.app", "register_app_tools"),
+            ("src.mcp_tools.cloud", "register_cloud_tools"),
+            ("src.mcp_tools.properties", "register_property_tools"),
+            ("src.mcp_tools.timeline_items", "register_timeline_item_tools"),
+        ],
+    )
+    def test_registration_does_not_raise(self, module_path, func_name):
+        """Should register without raising exceptions."""
+        import importlib
+
+        module = importlib.import_module(module_path)
+        register_func = getattr(module, func_name)
 
         mcp = MagicMock()
         resolve = Mock()
         logger = Mock()
 
-        register_timeline_tools(mcp, resolve, logger)
+        # Should not raise
+        register_func(mcp, resolve, logger)
 
-        logger.info.assert_called()
+    @pytest.mark.parametrize(
+        "module_path,func_name",
+        [
+            ("src.mcp_tools.core", "register_core_tools"),
+            ("src.mcp_tools.project", "register_project_tools"),
+            ("src.mcp_tools.timeline", "register_timeline_tools"),
+            ("src.mcp_tools.media", "register_media_tools"),
+            ("src.mcp_tools.color", "register_color_tools"),
+            ("src.mcp_tools.delivery", "register_delivery_tools"),
+            ("src.mcp_tools.cache", "register_cache_tools"),
+            ("src.mcp_tools.keyframes", "register_keyframe_tools"),
+            ("src.mcp_tools.presets", "register_preset_tools"),
+            ("src.mcp_tools.inspection", "register_inspection_tools"),
+            ("src.mcp_tools.layout", "register_layout_tools"),
+            ("src.mcp_tools.app", "register_app_tools"),
+            ("src.mcp_tools.cloud", "register_cloud_tools"),
+            ("src.mcp_tools.properties", "register_property_tools"),
+            ("src.mcp_tools.timeline_items", "register_timeline_item_tools"),
+        ],
+    )
+    def test_registration_logs_info(self, module_path, func_name):
+        """Should log info message after registration."""
+        import importlib
 
-
-class TestMediaToolsRegistration:
-    """Tests for media tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register media tools without error."""
-        from src.mcp_tools.media import register_media_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_media_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestColorToolsRegistration:
-    """Tests for color tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register color tools without error."""
-        from src.mcp_tools.color import register_color_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_color_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestDeliveryToolsRegistration:
-    """Tests for delivery tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register delivery tools without error."""
-        from src.mcp_tools.delivery import register_delivery_tools
+        module = importlib.import_module(module_path)
+        register_func = getattr(module, func_name)
 
         mcp = MagicMock()
         resolve = Mock()
         logger = Mock()
 
-        register_delivery_tools(mcp, resolve, logger)
+        register_func(mcp, resolve, logger)
 
-        logger.info.assert_called()
+        # Should log at least one info message
+        assert logger.info.called
 
+    @pytest.mark.parametrize(
+        "module_path,func_name",
+        [
+            ("src.mcp_tools.core", "register_core_tools"),
+            ("src.mcp_tools.project", "register_project_tools"),
+            ("src.mcp_tools.timeline", "register_timeline_tools"),
+            ("src.mcp_tools.media", "register_media_tools"),
+            ("src.mcp_tools.color", "register_color_tools"),
+            ("src.mcp_tools.delivery", "register_delivery_tools"),
+        ],
+    )
+    def test_registration_uses_mcp_decorators(self, module_path, func_name):
+        """Should use mcp.tool or mcp.resource decorators."""
+        import importlib
 
-class TestCacheToolsRegistration:
-    """Tests for cache tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register cache tools without error."""
-        from src.mcp_tools.cache import register_cache_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_cache_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestKeyframeToolsRegistration:
-    """Tests for keyframe tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register keyframe tools without error."""
-        from src.mcp_tools.keyframes import register_keyframe_tools
+        module = importlib.import_module(module_path)
+        register_func = getattr(module, func_name)
 
         mcp = MagicMock()
         resolve = Mock()
         logger = Mock()
 
-        register_keyframe_tools(mcp, resolve, logger)
+        register_func(mcp, resolve, logger)
 
-        logger.info.assert_called()
-
-
-class TestPresetToolsRegistration:
-    """Tests for preset tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register preset tools without error."""
-        from src.mcp_tools.presets import register_preset_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_preset_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
+        # At least one decorator should be called
+        assert mcp.tool.called or mcp.resource.called
 
 
-class TestInspectionToolsRegistration:
-    """Tests for inspection tools registration."""
+class TestNullResolveHandling:
+    """Tests that tools handle null resolve gracefully."""
 
-    def test_registers_without_error(self):
-        """Should register inspection tools without error."""
-        from src.mcp_tools.inspection import register_inspection_tools
+    @pytest.mark.parametrize(
+        "module_path,func_name",
+        [
+            ("src.mcp_tools.core", "register_core_tools"),
+            ("src.mcp_tools.project", "register_project_tools"),
+            ("src.mcp_tools.timeline", "register_timeline_tools"),
+            ("src.mcp_tools.media", "register_media_tools"),
+            ("src.mcp_tools.color", "register_color_tools"),
+            ("src.mcp_tools.delivery", "register_delivery_tools"),
+        ],
+    )
+    def test_registration_works_with_null_resolve(self, module_path, func_name):
+        """Should register successfully even with null resolve."""
+        import importlib
 
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_inspection_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestLayoutToolsRegistration:
-    """Tests for layout tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register layout tools without error."""
-        from src.mcp_tools.layout import register_layout_tools
+        module = importlib.import_module(module_path)
+        register_func = getattr(module, func_name)
 
         mcp = MagicMock()
-        resolve = Mock()
+        resolve = None  # Null resolve
         logger = Mock()
 
-        register_layout_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestAppToolsRegistration:
-    """Tests for app tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register app tools without error."""
-        from src.mcp_tools.app import register_app_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_app_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestCloudToolsRegistration:
-    """Tests for cloud tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register cloud tools without error."""
-        from src.mcp_tools.cloud import register_cloud_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_cloud_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestPropertyToolsRegistration:
-    """Tests for property tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register property tools without error."""
-        from src.mcp_tools.properties import register_property_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_property_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
-
-
-class TestTimelineItemToolsRegistration:
-    """Tests for timeline item tools registration."""
-
-    def test_registers_without_error(self):
-        """Should register timeline item tools without error."""
-        from src.mcp_tools.timeline_items import register_timeline_item_tools
-
-        mcp = MagicMock()
-        resolve = Mock()
-        logger = Mock()
-
-        register_timeline_item_tools(mcp, resolve, logger)
-
-        logger.info.assert_called()
+        # Should not raise
+        register_func(mcp, resolve, logger)
+        assert logger.info.called

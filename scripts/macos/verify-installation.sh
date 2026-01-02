@@ -47,12 +47,12 @@ check_mcp_sdk() {
 # Check if Resolve MCP server script exists
 check_server_script() {
     echo -ne "${YELLOW}Checking server script... ${NC}"
-    if [ -f "$PROJECT_ROOT/src/resolve_mcp_server.py" ]; then
+    if [ -f "$PROJECT_ROOT/src/src/__main__.py" ]; then
         echo -e "${GREEN}OK${NC}"
         return 0
     else
         echo -e "${RED}MISSING${NC}"
-        echo -e "${RED}Server script not found at: $PROJECT_ROOT/src/resolve_mcp_server.py${NC}"
+        echo -e "${RED}Server script not found at: $PROJECT_ROOT/src/src/__main__.py${NC}"
         return 1
     fi
 }

@@ -11,7 +11,7 @@ cd /d "%~dp0"
 
 :: Check if the server is running
 echo Checking for running server...
-wmic process where "commandline like '%%python%%resolve_mcp_server.py%%'" get processid 2>nul | findstr /r "[0-9]" > temp_pid.txt
+wmic process where "commandline like '%%python%%src\__main__.py%%'" get processid 2>nul | findstr /r "[0-9]" > temp_pid.txt
 
 :: Check if any PID was found
 set /p SERVER_PID=<temp_pid.txt
@@ -49,7 +49,7 @@ if exist "%SCRIPT_DIR%\..\run-now.bat" (
     timeout /t 3 /nobreak > nul
     
     :: Check if it started
-    wmic process where "commandline like '%%python%%resolve_mcp_server.py%%'" get processid 2>nul | findstr /r "[0-9]" > nul
+    wmic process where "commandline like '%%python%%src\__main__.py%%'" get processid 2>nul | findstr /r "[0-9]" > nul
     if %ERRORLEVEL% EQU 0 (
         echo DaVinci Resolve MCP Server started successfully!
     ) else (

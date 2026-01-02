@@ -25,7 +25,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
 $VenvDir = Join-Path -Path $RootDir -ChildPath "venv"
 $CursorConfigFile = Join-Path -Path $env:APPDATA -ChildPath "Cursor\mcp.json"
-$ResolveMcpServer = Join-Path -Path $RootDir -ChildPath "resolve_mcp_server.py"
+$ResolveMcpServer = Join-Path -Path $RootDir -ChildPath "src\__main__.py"
 
 # Default paths for DaVinci Resolve on Windows
 $DefaultResolveApiPath = Join-Path -Path $env:PROGRAMDATA -ChildPath "Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting"
@@ -34,7 +34,7 @@ $DefaultResolveModulesPath = Join-Path -Path $DefaultResolveApiPath -ChildPath "
 
 # List of required files with permissions
 $RequiredFiles = @(
-    @{Path = (Join-Path -Path $RootDir -ChildPath "resolve_mcp_server.py"); RequiredExists = $true},
+    @{Path = (Join-Path -Path $RootDir -ChildPath "src\__main__.py"); RequiredExists = $true},
     @{Path = (Join-Path -Path $RootDir -ChildPath "scripts\run-now.sh"); RequiredExists = $false}  # Optional file for Windows
 )
 
@@ -160,7 +160,7 @@ function Set-CursorConfig {
     # Python path in virtual environment for Windows
     $pythonPath = Join-Path -Path $VenvDir -ChildPath "Scripts\python.exe"
     $pythonPath = $pythonPath.Replace("\", "\\")
-    $serverPath = (Join-Path -Path $RootDir -ChildPath "src\main.py").Replace("\", "\\")
+    $serverPath = (Join-Path -Path $RootDir -ChildPath "src\__main__.py").Replace("\", "\\")
     
     # Create config file
     $configContent = @"
@@ -187,7 +187,7 @@ function Update-CursorConfig {
     # Python path in virtual environment for Windows
     $pythonPath = Join-Path -Path $VenvDir -ChildPath "Scripts\python.exe"
     $pythonPath = $pythonPath.Replace("\", "\\")
-    $serverPath = (Join-Path -Path $RootDir -ChildPath "src\main.py").Replace("\", "\\")
+    $serverPath = (Join-Path -Path $RootDir -ChildPath "src\__main__.py").Replace("\", "\\")
     
     try {
         # Read existing config
@@ -246,9 +246,9 @@ else {
     }
     
     Write-Yellow "Creating server file if missing..."
-    # Create resolve_mcp_server.py if it's missing
+    # Create src\__main__.py if it's missing
     if (-not (Test-Path -Path $ResolveMcpServer)) {
-        Write-Yellow "Creating basic resolve_mcp_server.py..."
+        Write-Yellow "Creating basic src\__main__.py..."
         $serverContent = @'
 #!/usr/bin/env python3
 """
@@ -312,7 +312,7 @@ if __name__ == "__main__":
     mcp.run()
 '@
         $serverContent | Out-File -FilePath $ResolveMcpServer -Encoding utf8 -Force
-        Write-Green "✓ Created resolve_mcp_server.py"
+        Write-Green "✓ Created src\__main__.py"
     }
 }
 

@@ -45,12 +45,12 @@ if %ERRORLEVEL% == 0 (
 
 REM Check if Resolve MCP server script exists
 echo %YELLOW%Checking server script... %NC%
-if exist "%PROJECT_ROOT%\src\resolve_mcp_server.py" (
+if exist "%PROJECT_ROOT%\src\src\__main__.py" (
     echo %GREEN%OK%NC%
     set /a "script_check=1"
 ) else (
     echo %RED%MISSING%NC%
-    echo %RED%Server script not found at: %PROJECT_ROOT%\src\resolve_mcp_server.py%NC%
+    echo %RED%Server script not found at: %PROJECT_ROOT%\src\src\__main__.py%NC%
     set /a "script_check=0"
 )
 

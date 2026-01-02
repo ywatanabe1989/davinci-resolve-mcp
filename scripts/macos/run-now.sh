@@ -12,7 +12,7 @@ SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 VENV_DIR="$ROOT_DIR/venv"
-SERVER_PATH="$ROOT_DIR/src/resolve_mcp_server.py"
+SERVER_PATH="$ROOT_DIR/src/src/__main__.py"
 
 echo -e "${GREEN}Setting up DaVinci Resolve MCP Server with virtual environment...${NC}"
 echo -e "${YELLOW}Project root: $ROOT_DIR${NC}"

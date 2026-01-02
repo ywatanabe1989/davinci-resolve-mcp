@@ -154,7 +154,7 @@ REM Create system-level config file with the absolute paths
     echo     "davinci-resolve": {
     echo       "name": "DaVinci Resolve MCP",
     echo       "command": "%INSTALL_DIR:\=\\%\\venv\\Scripts\\python.exe",
-    echo       "args": ["%INSTALL_DIR:\=\\%\\resolve_mcp_server.py"]
+    echo       "args": ["%INSTALL_DIR:\=\\%\\src\__main__.py"]
     echo     }
     echo   }
     echo }
@@ -170,7 +170,7 @@ REM Create project-level config with absolute paths (same as system-level config
     echo     "davinci-resolve": {
     echo       "name": "DaVinci Resolve MCP",
     echo       "command": "%INSTALL_DIR:\=\\%\\venv\\Scripts\\python.exe",
-    echo       "args": ["%INSTALL_DIR:\=\\%\\resolve_mcp_server.py"]
+    echo       "args": ["%INSTALL_DIR:\=\\%\\src\__main__.py"]
     echo     }
     echo   }
     echo }
@@ -187,7 +187,7 @@ if exist "%CURSOR_CONFIG_FILE%" if exist "%PROJECT_CONFIG_FILE%" (
     REM Show the paths that were set
     echo %YELLOW%Paths configured:%NC%
     echo %BLUE%  Python: %INSTALL_DIR%\venv\Scripts\python.exe%NC%
-    echo %BLUE%  Script: %INSTALL_DIR%\resolve_mcp_server.py%NC%
+    echo %BLUE%  Script: %INSTALL_DIR%\src\__main__.py%NC%
     
     set CONFIG_STATUS=1
 ) else (
@@ -220,7 +220,7 @@ echo %GREEN%%BOLD%Starting DaVinci Resolve MCP Server...%NC%
 echo.
 
 REM Run the server using the virtual environment
-"%VENV_DIR%\Scripts\python.exe" "%INSTALL_DIR%\resolve_mcp_server.py"
+"%VENV_DIR%\Scripts\python.exe" "%INSTALL_DIR%\src\__main__.py"
 
 set SERVER_EXIT=%ERRORLEVEL%
 call :log "Server exited with code: %SERVER_EXIT%"

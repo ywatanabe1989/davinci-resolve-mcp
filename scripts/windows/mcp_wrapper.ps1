@@ -15,7 +15,7 @@ $env:RESOLVE_SCRIPT_LIB = $LibPath
 # Setup process
 $pinfo = New-Object System.Diagnostics.ProcessStartInfo
 $pinfo.FileName = "$ProjectPath\venv\Scripts\python.exe"
-$pinfo.Arguments = "`"$ProjectPath\src\main.py`""
+$pinfo.Arguments = "`"$ProjectPath\src\__main__.py`""
 $pinfo.RedirectStandardInput = $true
 $pinfo.RedirectStandardOutput = $true
 $pinfo.RedirectStandardError = $true

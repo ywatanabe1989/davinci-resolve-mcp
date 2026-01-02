@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-DaVinci Resolve MCP Server - Smart Entry Point
+DaVinci Resolve MCP Server - WSL Entry Point
 
 Automatically detects environment (WSL vs Windows) and launches appropriately.
 For MCP stdio communication, all status output goes to stderr only when verbose.
 
 Usage:
-    python -m src.bin.mcp_entry          # MCP mode (quiet)
-    python -m src.bin.mcp_entry --verbose # With status output
+    python scripts/linux/mcp_entry.py           # MCP mode (quiet)
+    python scripts/linux/mcp_entry.py --verbose # With status output
 """
 
 import sys
@@ -60,9 +60,7 @@ def win_to_wsl_path(win_path: str) -> str:
 
 def get_windows_paths(config: dict) -> dict:
     """Get Windows paths from config or defaults."""
-    win_project = config.get(
-        "RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp"
-    )
+    win_project = config.get("RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp")
     return {
         "project": win_project,
         "python": f"{win_project}\\.venv_win\\Scripts\\python.exe",
@@ -135,9 +133,7 @@ def run_via_wsl(verbose: bool = False) -> int:
             time.sleep(2)
             if check_resolve_running(verbose=False):
                 if verbose:
-                    print(
-                        "DaVinci Resolve started, waiting for API...", file=sys.stderr
-                    )
+                    print("DaVinci Resolve started, waiting for API...", file=sys.stderr)
                 time.sleep(10)  # Extra time for API
                 break
         else:

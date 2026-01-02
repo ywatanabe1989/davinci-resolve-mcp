@@ -11,7 +11,7 @@ $env:RESOLVE_SCRIPT_LIB = "C:\Program Files\Blackmagic Design\DaVinci Resolve\fu
 # Run MCP server (use system Python if venv not available)
 $VenvPython = "$ProjectPath\venv\Scripts\python.exe"
 if (Test-Path $VenvPython) {
-    & $VenvPython "$ProjectPath\src\main.py"
+    & $VenvPython "$ProjectPath\src\__main__.py"
 } else {
-    & python "$ProjectPath\src\main.py"
+    & python "$ProjectPath\src\__main__.py"
 }

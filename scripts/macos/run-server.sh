@@ -7,4 +7,4 @@ if [ -z "$RESOLVE_SCRIPT_API" ]; then
 fi
 
 # Activate virtual environment and run server
-"/Users/samuelgursky/davinci-resolve-mcp-20250326/scripts/venv/bin/python" "/Users/samuelgursky/davinci-resolve-mcp-20250326/scripts/resolve_mcp_server.py" "$@"
+"/Users/samuelgursky/davinci-resolve-mcp-20250326/scripts/venv/bin/python" "/Users/samuelgursky/davinci-resolve-mcp-20250326/scripts/src/__main__.py" "$@"

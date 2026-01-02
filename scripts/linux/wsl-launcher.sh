@@ -141,8 +141,8 @@ find_mcp_script() {
     local project_wsl
     project_wsl="$(win_to_wsl "$WIN_PROJECT")"
     local script_paths=(
-        "$project_wsl/src/resolve_mcp_server.py"
-        "$project_wsl/resolve_mcp_server.py"
+        "$project_wsl/src/__main__.py"
+        "$project_wsl/src/__main__.py"
     )
 
     for path in "${script_paths[@]}"; do
@@ -153,7 +153,7 @@ find_mcp_script() {
     done
 
     # Default
-    printf '%s\\src\\resolve_mcp_server.py' "$WIN_PROJECT"
+    printf '%s\\src\\src/__main__.py' "$WIN_PROJECT"
 }
 
 # Find Resolve scripting API path

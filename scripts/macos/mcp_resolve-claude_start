@@ -76,7 +76,7 @@ check_environment() {
 
 # Make script executable
 make_executable() {
-    chmod +x "$SCRIPT_DIR/resolve_mcp_server.py"
+    chmod +x "$SCRIPT_DIR/src/__main__.py"
     echo -e "${GREEN}✓ Made server script executable${NC}"
 }
 
@@ -218,11 +218,11 @@ main() {
     if [ -n "$PROJECT_NAME" ]; then
         echo -e "${YELLOW}Starting server with project: $PROJECT_NAME${NC}"
         # Run the server with project option
-        "$VENV_DIR/bin/mcp" dev "$SCRIPT_DIR/resolve_mcp_server.py" --project "$PROJECT_NAME" > "$LOG_FILE" 2>&1 &
+        "$VENV_DIR/bin/mcp" dev "$SCRIPT_DIR/src/__main__.py" --project "$PROJECT_NAME" > "$LOG_FILE" 2>&1 &
         SERVER_PID=$!
     else
         # Run the server
-        "$VENV_DIR/bin/mcp" dev "$SCRIPT_DIR/resolve_mcp_server.py" > "$LOG_FILE" 2>&1 &
+        "$VENV_DIR/bin/mcp" dev "$SCRIPT_DIR/src/__main__.py" > "$LOG_FILE" 2>&1 &
         SERVER_PID=$!
     fi
     

@@ -13,7 +13,7 @@ set ROOT_DIR=%SCRIPT_DIR%..
 echo Project root: %ROOT_DIR%
 
 set VENV_DIR=%ROOT_DIR%venv
-set RESOLVE_MCP_SERVER=%ROOT_DIR%src\resolve_mcp_server.py
+set RESOLVE_MCP_SERVER=%ROOT_DIR%src\src\__main__.py
 
 REM Check if Python is installed
 where python >nul 2>nul

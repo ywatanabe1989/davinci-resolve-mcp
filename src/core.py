@@ -62,9 +62,7 @@ try:
     if resolve:
         logger.info("Successfully connected to DaVinci Resolve")
     else:
-        logger.warning(
-            "DaVinci Resolve is not running or the scripting API is unavailable"
-        )
+        logger.warning("DaVinci Resolve is not running or the scripting API is unavailable")
 except ImportError as e:
     logger.error(f"Failed to import DaVinciResolveScript: {e}")
 except Exception as e:
@@ -77,19 +75,5 @@ register_all_tools(mcp, resolve, logger)
 logger.info("All MCP tools registered successfully")
 
 
-# Start the server
-if __name__ == "__main__":
-    try:
-        if resolve is None:
-            logger.error("Cannot start server without connection to DaVinci Resolve")
-            sys.exit(1)
-
-        logger.info("Starting DaVinci Resolve MCP Server")
-        # Start the MCP server with the simple run method
-        # Note: The MCP CLI tool handles port configuration, not FastMCP directly
-        mcp.run()
-    except KeyboardInterrupt:
-        logger.info("Server shutdown requested")
-    except Exception as e:
-        logger.error(f"Server error: {str(e)}")
-        sys.exit(1)
+# Note: This module should be imported, not run directly.
+# Use src/__main__.py as the entry point.

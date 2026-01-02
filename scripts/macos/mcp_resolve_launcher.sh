@@ -43,11 +43,11 @@ check_resolve_running() {
 
 # Find server PIDs
 find_server_pids() {
-    # Look for cursor server (using mcp dev with resolve_mcp_server.py)
-    CURSOR_PID=$(pgrep -f "mcp dev.*resolve_mcp_server.py" | head -1)
+    # Look for cursor server (using mcp dev with src/__main__.py)
+    CURSOR_PID=$(pgrep -f "mcp dev.*src/__main__.py" | head -1)
     
-    # Look for Claude server (using mcp dev with resolve_mcp_server.py)
-    CLAUDE_PID=$(pgrep -f "mcp dev.*resolve_mcp_server.py" | head -1)
+    # Look for Claude server (using mcp dev with src/__main__.py)
+    CLAUDE_PID=$(pgrep -f "mcp dev.*src/__main__.py" | head -1)
     
     # If both are found and they're the same, set one to empty
     if [ "$CURSOR_PID" = "$CLAUDE_PID" ] && [ -n "$CURSOR_PID" ]; then

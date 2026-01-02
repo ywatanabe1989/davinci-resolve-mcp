@@ -105,7 +105,7 @@ start_server() {
     read -p "Run server in background? (y/n): " bg_choice
     if [[ "$bg_choice" =~ ^[Yy]$ ]]; then
         print_status "info" "Starting server in background mode..."
-        nohup "$VENV_DIR/bin/mcp" dev "$PROJECT_DIR/src/resolve_mcp_server.py" > "$PROJECT_DIR/mcp_server.log" 2>&1 &
+        nohup "$VENV_DIR/bin/mcp" dev "$PROJECT_DIR/src/src/__main__.py" > "$PROJECT_DIR/mcp_server.log" 2>&1 &
         print_status "success" "Server is running in the background."
         print_status "info" "Logs are being written to: $PROJECT_DIR/mcp_server.log"
         print_status "info" "To stop the server, use option 2 from the main menu."
@@ -114,7 +114,7 @@ start_server() {
         print_status "info" "Press Ctrl+C to stop the server"
         print_status "info" "Server is starting..."
         sleep 1
-        "$VENV_DIR/bin/mcp" dev "$PROJECT_DIR/src/resolve_mcp_server.py"
+        "$VENV_DIR/bin/mcp" dev "$PROJECT_DIR/src/src/__main__.py"
     fi
     
     read -p "Press Enter to return to the main menu..." dummy
@@ -319,7 +319,7 @@ view_readme() {
 
 # Make all scripts executable
 chmod +x "$SCRIPT_DIR"/*.sh
-chmod +x "$PROJECT_DIR/src/resolve_mcp_server.py"
+chmod +x "$PROJECT_DIR/src/src/__main__.py"
 
 # Start the main menu
 show_main_menu 

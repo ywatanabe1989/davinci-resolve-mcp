@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Universal launcher for DaVinci Resolve MCP Server
+# Detects OS and calls appropriate platform-specific script
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Detect platform
+detect_platform() {
+    case "$(uname -s)" in
+        Darwin)
+            echo "macos"
+            ;;
+        Linux)
+            # Check if running in WSL
+            if grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null; then
+                echo "wsl"
+            else
+                echo "linux"
+            fi
+            ;;
+        MINGW*|MSYS*|CYGWIN*)
+            echo "windows"
+            ;;
+        *)
+            echo "unknown"
+            ;;
+    esac
+}
+
+PLATFORM=$(detect_platform)
+
+case "$PLATFORM" in
+    macos)
+        echo "Detected: macOS"
+        exec "$SCRIPT_DIR/macos/run-now.sh" "$@"
+        ;;
+    wsl)
+        echo "Detected: WSL (Windows Subsystem for Linux)"
+        exec python3 "$SCRIPT_DIR/linux/mcp_entry.py" "$@"
+        ;;
+    linux)
+        echo "Detected: Linux"
+        echo "Note: DaVinci Resolve must be running on this machine"
+        exec python3 "$PROJECT_ROOT/src/__main__.py" "$@"
+        ;;
+    windows)
+        echo "Detected: Windows (Git Bash/MSYS)"
+        echo "Please use scripts/windows/run-now.bat instead"
+        exit 1
+        ;;
+    *)
+        echo "Error: Unknown platform"
+        exit 1
+        ;;
+esac

@@ -94,7 +94,7 @@ if [ -z "\$RESOLVE_SCRIPT_API" ]; then
 fi
 
 # Activate virtual environment and run server
-"$VENV_DIR/bin/python" "$SCRIPT_DIR/../src/main.py" "\$@"
+"$VENV_DIR/bin/python" "$SCRIPT_DIR/../src/__main__.py" "\$@"
 EOF
 
 chmod +x "$SCRIPT_DIR/run-server.sh"
@@ -131,7 +131,7 @@ EOF
 fi
 
 # Make the server script executable
-chmod +x "$SCRIPT_DIR/resolve_mcp_server.py"
+chmod +x "$SCRIPT_DIR/src/__main__.py"
 
 echo -e "${GREEN}Setup completed!${NC}"
 echo ""
@@ -139,6 +139,6 @@ echo -e "${YELLOW}Important:${NC}"
 echo "1. Make sure to restart your terminal or run 'source $SHELL_PROFILE' to apply the environment variables."
 echo "2. DaVinci Resolve must be running before starting the MCP server."
 echo "3. You can test the server by running: $SCRIPT_DIR/run-server.sh"
-echo "   or with the MCP CLI: $VENV_DIR/bin/mcp dev $SCRIPT_DIR/resolve_mcp_server.py"
+echo "   or with the MCP CLI: $VENV_DIR/bin/mcp dev $SCRIPT_DIR/src/__main__.py"
 echo ""
 echo -e "${GREEN}Happy editing with DaVinci Resolve and your AI assistant!${NC}" 

@@ -13,7 +13,7 @@ cd "$SCRIPT_DIR"
 # Function to check if the server is running
 check_server_running() {
     # Look for Python processes running the server
-    pgrep -f "python.*resolve_mcp_server.py" > /dev/null
+    pgrep -f "python.*src/__main__.py" > /dev/null
     return $?
 }
 
@@ -22,7 +22,7 @@ if check_server_running; then
     echo "Stopping existing DaVinci Resolve MCP Server..."
     
     # Find the PID of the server process
-    SERVER_PID=$(pgrep -f "python.*resolve_mcp_server.py")
+    SERVER_PID=$(pgrep -f "python.*src/__main__.py")
     
     if [ -n "$SERVER_PID" ]; then
         echo "Server process found with PID: $SERVER_PID"

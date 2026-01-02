@@ -155,7 +155,7 @@ setup_cursor_config() {
     "davinci-resolve": {
       "name": "DaVinci Resolve MCP",
       "command": "${INSTALL_DIR}/venv/bin/python",
-      "args": ["${INSTALL_DIR}/resolve_mcp_server.py"]
+      "args": ["${INSTALL_DIR}/src/__main__.py"]
     }
   }
 }
@@ -171,7 +171,7 @@ EOF
     "davinci-resolve": {
       "name": "DaVinci Resolve MCP",
       "command": "${INSTALL_DIR}/venv/bin/python",
-      "args": ["${INSTALL_DIR}/resolve_mcp_server.py"]
+      "args": ["${INSTALL_DIR}/src/__main__.py"]
     }
   }
 }
@@ -188,7 +188,7 @@ EOF
         # Show the paths that were set
         echo -e "${YELLOW}Paths configured:${NC}"
         echo -e "${BLUE}  Python: ${INSTALL_DIR}/venv/bin/python${NC}"
-        echo -e "${BLUE}  Script: ${INSTALL_DIR}/resolve_mcp_server.py${NC}"
+        echo -e "${BLUE}  Script: ${INSTALL_DIR}/src/__main__.py${NC}"
         
         return 0
     else
@@ -204,7 +204,7 @@ make_script_executable() {
     log "Making server script executable"
     echo -ne "${YELLOW}Making server script executable... ${NC}"
     
-    chmod +x "$INSTALL_DIR/resolve_mcp_server.py"
+    chmod +x "$INSTALL_DIR/src/__main__.py"
     chmod +x "$INSTALL_DIR/scripts/mcp_resolve-cursor_start"
     chmod +x "$INSTALL_DIR/scripts/verify-installation.sh"
     
@@ -236,7 +236,7 @@ run_server() {
     echo ""
     
     # Run the server using the virtual environment
-    "$VENV_DIR/bin/python" "$INSTALL_DIR/resolve_mcp_server.py"
+    "$VENV_DIR/bin/python" "$INSTALL_DIR/src/__main__.py"
     
     SERVER_EXIT=$?
     log "Server exited with code: $SERVER_EXIT"
