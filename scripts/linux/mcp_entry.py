@@ -60,9 +60,7 @@ def win_to_wsl_path(win_path: str) -> str:
 
 def get_windows_paths(config: dict) -> dict:
     """Get Windows paths from config or defaults."""
-    win_project = config.get(
-        "RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp"
-    )
+    win_project = config.get("RESOLVE_MCP_PROJECT", r"C:\Program Files (x86)\ywatanabe\davinci-resolve-mcp")
     return {
         "project": win_project,
         "python": f"{win_project}\\.venv_win\\Scripts\\python.exe",
@@ -113,14 +111,16 @@ def run_via_wsl(verbose: bool = False) -> int:
     """
     import time
 
+    # Always show status to stderr (doesn't interfere with MCP stdio protocol)
+    print("[MCP] Initializing WSL bridge to Windows...", file=sys.stderr)
+
     # Load config from .env
     config = load_env_config()
     paths = get_windows_paths(config)
 
     # Check if Resolve is running
     if not check_resolve_running(verbose):
-        if verbose:
-            print("Starting DaVinci Resolve...", file=sys.stderr)
+        print("[MCP] Starting DaVinci Resolve...", file=sys.stderr)
         subprocess.run(
             [
                 "powershell.exe",
@@ -131,22 +131,26 @@ def run_via_wsl(verbose: bool = False) -> int:
             capture_output=True,
         )
         # Wait for Resolve to start
-        for _ in range(30):
+        for i in range(30):
             time.sleep(2)
             if check_resolve_running(verbose=False):
-                if verbose:
-                    print(
-                        "DaVinci Resolve started, waiting for API...", file=sys.stderr
-                    )
+                print("[MCP] DaVinci Resolve started, waiting for API...", file=sys.stderr)
                 time.sleep(10)  # Extra time for API
                 break
+            if i % 5 == 0:
+                print(f"[MCP] Waiting for Resolve... ({i * 2}s)", file=sys.stderr)
         else:
-            print("ERROR: Timeout waiting for DaVinci Resolve", file=sys.stderr)
+            print("[MCP] ERROR: Timeout waiting for DaVinci Resolve", file=sys.stderr)
             return 1
+    else:
+        print("[MCP] DaVinci Resolve is running", file=sys.stderr)
+
+    print(f"[MCP] Using Python: {paths['python']}", file=sys.stderr)
+    print("[MCP] Starting server (stdio mode)...", file=sys.stderr)
 
     if verbose:
-        print(f"Project: {paths['project']}", file=sys.stderr)
-        print(f"Script: {paths['script']}", file=sys.stderr)
+        print(f"[MCP] Project: {paths['project']}", file=sys.stderr)
+        print(f"[MCP] Script: {paths['script']}", file=sys.stderr)
 
     # Build inline PowerShell script for proper stdio handling
     # Uses synchronous reads with threading for continuous bidirectional IO
