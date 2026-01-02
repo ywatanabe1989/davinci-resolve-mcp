@@ -21,13 +21,26 @@ def is_wsl() -> bool:
     return sys.platform == "linux" and "microsoft" in os.uname().release.lower()
 
 
+def is_windows() -> bool:
+    """Check if running on Windows (native or via WSL bridge)."""
+    return sys.platform == "win32"
+
+
 def find_powershell() -> Optional[str]:
     """Find PowerShell executable."""
-    ps_paths = [
-        "powershell.exe",
-        "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
-        "/mnt/c/Windows/SysWOW64/WindowsPowerShell/v1.0/powershell.exe",
-    ]
+    if is_windows():
+        # On Windows, PowerShell is in PATH
+        ps_paths = [
+            "powershell.exe",
+            r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+        ]
+    else:
+        # On WSL, use the Windows paths via /mnt/c
+        ps_paths = [
+            "powershell.exe",
+            "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+            "/mnt/c/Windows/SysWOW64/WindowsPowerShell/v1.0/powershell.exe",
+        ]
 
     for path in ps_paths:
         try:
@@ -105,8 +118,8 @@ def capture_screenshot(
     Returns:
         Dict with 'success', 'path' or 'base64', and optional 'error'
     """
-    if not is_wsl():
-        return {"success": False, "error": "Not running in WSL"}
+    if not (is_wsl() or is_windows()):
+        return {"success": False, "error": "Not running on Windows or WSL"}
 
     # Build capture script
     ps_script = """
@@ -167,8 +180,8 @@ def capture_screenshot(
 
 def list_windows() -> Dict[str, Any]:
     """List all visible windows with their handles."""
-    if not is_wsl():
-        return {"success": False, "error": "Not running in WSL"}
+    if not (is_wsl() or is_windows()):
+        return {"success": False, "error": "Not running on Windows or WSL"}
 
     ps_script = """
     Add-Type @'
@@ -214,12 +227,12 @@ def capture_window(
     return_base64: bool = False,
 ) -> Dict[str, Any]:
     """Capture a specific window by its handle."""
-    if not is_wsl():
-        return {"success": False, "error": "Not running in WSL"}
+    if not (is_wsl() or is_windows()):
+        return {"success": False, "error": "Not running on Windows or WSL"}
 
     ps_script = f"""
     Add-Type -AssemblyName System.Drawing
-    Add-Type @'
+    Add-Type -ReferencedAssemblies System.Drawing @'
     using System; using System.Drawing; using System.Runtime.InteropServices;
     public class WinCap {{
         [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
@@ -267,9 +280,7 @@ def find_resolve_window() -> Optional[Dict[str, Any]]:
     return None
 
 
-def capture_resolve_window(
-    output_path: str = None, quality: int = 85, return_base64: bool = False
-) -> Dict[str, Any]:
+def capture_resolve_window(output_path: str = None, quality: int = 85, return_base64: bool = False) -> Dict[str, Any]:
     """Capture the DaVinci Resolve window."""
     window = find_resolve_window()
     if not window:
@@ -283,8 +294,8 @@ def capture_resolve_window(
 
 def get_monitor_info() -> Dict[str, Any]:
     """Get information about all monitors."""
-    if not is_wsl():
-        return {"success": False, "error": "Not running in WSL"}
+    if not (is_wsl() or is_windows()):
+        return {"success": False, "error": "Not running on Windows or WSL"}
 
     ps_script = """
     Add-Type -AssemblyName System.Windows.Forms
