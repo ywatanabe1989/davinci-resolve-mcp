@@ -84,9 +84,9 @@ def get_wsl_unc_path() -> str:
         distro = "Ubuntu"
 
     project_root = get_project_root()
-    # Convert /home/user/path to \\wsl$\Distro\home\user\path
+    # Convert /home/user/path to \\wsl.localhost\Distro\home\user\path
     win_path = str(project_root).replace("/", "\\")
-    return f"\\\\wsl$\\{distro}{win_path}"
+    return f"\\\\wsl.localhost\\{distro}{win_path}"
 
 
 def print_dependency_error(python_path: str, missing_packages: list[str]):
