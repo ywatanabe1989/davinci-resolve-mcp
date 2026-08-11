@@ -16,12 +16,37 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: local
-    hooks:
-      - id: pytest
-        name: pytest
-        entry: python -m pytest tests/ -x -q --tb=short
-        language: system
-        types: [python]
-        pass_filenames: false
-        stages: [pre-commit]
+  # The full test suite is NOT run at commit time — it runs in CI
+  # (.github/workflows/ci.yml), which already executes pytest on every push in a
+  # clean environment.
+  #
+  # The hook that used to live here was:
+  #
+  #   - id: pytest
+  #     entry: python -m pytest tests/ -x -q --tb=short
+  #     language: system
+  #     stages: [pre-commit]        # ← on EVERY commit
+  #
+  # Two defects, both measured 2026-07-14:
+  #
+  # 1. SLOW. It ran the entire suite on every commit. Timed on an idle 16-core
+  #    box: 837 seconds and still only 88% through the tests — i.e. >14 minutes
+  #    of latency added to `git commit`. With the hook gone, a cold run of ALL
+  #    remaining hooks over ALL 156 files takes 11 seconds.
+  #
+  # 2. NONDETERMINISTIC. `language: system` runs the entry against whatever is
+  #    on the ambient $PATH, and `pytest` is NOT a declared dependency of this
+  #    repo — it appears in pyproject.toml only under
+  #    `[tool.pytest.ini_options]`, which is a CONFIG section, not a dependency,
+  #    and it is absent from requirements.txt. The hook worked purely by
+  #    accident, on machines where pytest happened to be installed. Same repo,
+  #    same config, two machines:
+  #        host      -> /home/ywatanabe/.env-3.11/bin/pytest   (py3.11)
+  #        container -> /opt/venv-sac/bin/pytest               (py3.12)
+  #
+  # If a commit-time test gate is ever wanted here, it MUST be
+  # `language: python` + `additional_dependencies: ["pytest>=8"]` (pre-commit
+  # then builds an isolated venv and the dep is explicit), and it MUST be
+  # bounded with `files:` to a slice — never the whole suite.
+  #
+  # Enforced by scitex-dev audit rule PS-HOOK-001.
